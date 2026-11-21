@@ -53,7 +53,8 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "S", "PT", "TID"]
 ignore = ["S101"]  # assert is fine in tests
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S", "PT011"]
+# PT012: DB tests wrap a savepoint inside pytest.raises so a failed statement rolls back cleanly.
+"tests/**" = ["S", "PT011", "PT012"]
 
 [tool.pyright]
 include = ["src", "evals", "tests"]

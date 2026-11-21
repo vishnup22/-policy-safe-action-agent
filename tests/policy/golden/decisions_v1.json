@@ -1,0 +1,1229 @@
+{
+  "address_ok": {
+    "facts": {
+      "intent.address_country_changed": false,
+      "intent.has_order": true,
+      "order.exists": true,
+      "order.is_shipped": false,
+      "order.owned_by_session_customer": true,
+      "order.status": "paid",
+      "session.identity_verified": true
+    },
+    "outcome": "ALLOW",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "NOT_ALREADY_CLOSED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ADDRESS_BEFORE_SHIPMENT",
+        "ALLOW",
+        null
+      ],
+      [
+        "ADDRESS_SAME_COUNTRY",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "address_other_country": {
+    "facts": {
+      "intent.address_country_changed": true,
+      "intent.has_order": true,
+      "order.exists": true,
+      "order.is_shipped": false,
+      "order.owned_by_session_customer": true,
+      "order.status": "paid",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "NOT_ALREADY_CLOSED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ADDRESS_BEFORE_SHIPMENT",
+        "ALLOW",
+        null
+      ],
+      [
+        "ADDRESS_SAME_COUNTRY",
+        "DENY",
+        "ADDRESS_COUNTRY_CHANGE"
+      ]
+    ]
+  },
+  "address_shipped": {
+    "facts": {
+      "intent.address_country_changed": false,
+      "intent.has_order": true,
+      "order.exists": true,
+      "order.is_shipped": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "shipped",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "NOT_ALREADY_CLOSED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ADDRESS_BEFORE_SHIPMENT",
+        "DENY",
+        "ADDRESS_CHANGE_AFTER_SHIPMENT"
+      ],
+      [
+        "ADDRESS_SAME_COUNTRY",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "cancel_cancelled": {
+    "facts": {
+      "intent.has_order": true,
+      "order.exists": true,
+      "order.is_shipped": false,
+      "order.owned_by_session_customer": true,
+      "order.status": "cancelled",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "NOT_ALREADY_CLOSED",
+        "DENY",
+        "ORDER_ALREADY_CANCELLED"
+      ],
+      [
+        "CANCEL_BEFORE_SHIPMENT",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "cancel_shipped": {
+    "facts": {
+      "intent.has_order": true,
+      "order.exists": true,
+      "order.is_shipped": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "shipped",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "NOT_ALREADY_CLOSED",
+        "ALLOW",
+        null
+      ],
+      [
+        "CANCEL_BEFORE_SHIPMENT",
+        "DENY",
+        "ORDER_ALREADY_SHIPPED"
+      ]
+    ]
+  },
+  "cancel_unshipped": {
+    "facts": {
+      "intent.has_order": true,
+      "order.exists": true,
+      "order.is_shipped": false,
+      "order.owned_by_session_customer": true,
+      "order.status": "paid",
+      "session.identity_verified": true
+    },
+    "outcome": "ALLOW",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "NOT_ALREADY_CLOSED",
+        "ALLOW",
+        null
+      ],
+      [
+        "CANCEL_BEFORE_SHIPMENT",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "escalate_anonymous": {
+    "facts": {},
+    "outcome": "ALLOW",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "ESCALATION_ALLOWED",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "follow_up_own_order": {
+    "facts": {
+      "intent.has_order": true,
+      "order.exists": true,
+      "order.owned_by_session_customer": true
+    },
+    "outcome": "ALLOW",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "OPTIONAL_ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "FOLLOW_UP_ALLOWED",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_200_01": {
+    "facts": {
+      "intent.amount_cents": 20001,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 25000,
+      "order.days_since_delivery": 10,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": true
+    },
+    "outcome": "REQUIRE_APPROVAL",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "REQUIRE_APPROVAL",
+        "HIGH_VALUE_REFUND"
+      ]
+    ]
+  },
+  "refund_day_30": {
+    "facts": {
+      "intent.amount_cents": 3200,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 3200,
+      "order.days_since_delivery": 30,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": true
+    },
+    "outcome": "ALLOW",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_day_31": {
+    "facts": {
+      "intent.amount_cents": 3200,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 3200,
+      "order.days_since_delivery": 31,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "DENY",
+        "OUTSIDE_RETURN_WINDOW"
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_exactly_200": {
+    "facts": {
+      "intent.amount_cents": 20000,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 25000,
+      "order.days_since_delivery": 10,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": true
+    },
+    "outcome": "ALLOW",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_exceeds_refundable": {
+    "facts": {
+      "intent.amount_cents": 2201,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 2200,
+      "order.days_since_delivery": 10,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "partially_refunded",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "DENY",
+        "AMOUNT_EXCEEDS_REFUNDABLE"
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_final_sale": {
+    "facts": {
+      "intent.amount_cents": 3200,
+      "intent.has_order": true,
+      "intent.includes_final_sale": true,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 3200,
+      "order.days_since_delivery": 10,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "DENY",
+        "FINAL_SALE_ITEM"
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_gift_card": {
+    "facts": {
+      "intent.amount_cents": 5000,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": true,
+      "order.amount_refundable_cents": 5000,
+      "order.days_since_delivery": 10,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "DENY",
+        "GIFT_CARD_NOT_REFUNDABLE"
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_in_window": {
+    "facts": {
+      "intent.amount_cents": 3200,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 3200,
+      "order.days_since_delivery": 10,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": true
+    },
+    "outcome": "ALLOW",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_missing_delivery_time": {
+    "facts": {
+      "_missing": {
+        "order.days_since_delivery": "order has not been delivered"
+      },
+      "intent.amount_cents": 3200,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 3200,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "DENY",
+        "MISSING_FACT"
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_multiple_violations": {
+    "facts": {
+      "intent.amount_cents": 30000,
+      "intent.has_order": true,
+      "intent.includes_final_sale": true,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 25000,
+      "order.days_since_delivery": 45,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": false
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "REQUIRE_VERIFICATION",
+        "IDENTITY_NOT_VERIFIED"
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "DENY",
+        "OUTSIDE_RETURN_WINDOW"
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "DENY",
+        "AMOUNT_EXCEEDS_REFUNDABLE"
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "DENY",
+        "FINAL_SALE_ITEM"
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "REQUIRE_APPROVAL",
+        "HIGH_VALUE_REFUND"
+      ]
+    ]
+  },
+  "refund_not_delivered": {
+    "facts": {
+      "intent.amount_cents": 3200,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 3200,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "shipped",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "DENY",
+        "ORDER_NOT_DELIVERED"
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_other_customer": {
+    "facts": {
+      "intent.amount_cents": 3200,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 3200,
+      "order.days_since_delivery": 10,
+      "order.exists": true,
+      "order.owned_by_session_customer": false,
+      "order.status": "delivered",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "DENY",
+        "ORDER_NOT_OWNED_BY_CUSTOMER"
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_unknown_order": {
+    "facts": {
+      "intent.amount_cents": 3200,
+      "intent.has_order": true,
+      "order.exists": false,
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "DENY",
+        "ORDER_NOT_FOUND"
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "refund_unverified": {
+    "facts": {
+      "intent.amount_cents": 3200,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "order.amount_refundable_cents": 3200,
+      "order.days_since_delivery": 10,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": false
+    },
+    "outcome": "REQUIRE_VERIFICATION",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "REQUIRE_VERIFICATION",
+        "IDENTITY_NOT_VERIFIED"
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "store_credit_needs_approval": {
+    "facts": {
+      "customer.store_credit_30d_after_intent_cents": 5001,
+      "intent.amount_cents": 5001,
+      "intent.has_order": false,
+      "session.identity_verified": true
+    },
+    "outcome": "REQUIRE_APPROVAL",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "STORE_CREDIT_SINGLE_LIMIT",
+        "REQUIRE_APPROVAL",
+        "STORE_CREDIT_LIMIT"
+      ],
+      [
+        "STORE_CREDIT_ROLLING_CAP",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "store_credit_over_cap": {
+    "facts": {
+      "customer.store_credit_30d_after_intent_cents": 17000,
+      "intent.amount_cents": 5000,
+      "intent.has_order": false,
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "STORE_CREDIT_SINGLE_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "STORE_CREDIT_ROLLING_CAP",
+        "DENY",
+        "STORE_CREDIT_LIMIT"
+      ]
+    ]
+  },
+  "store_credit_small": {
+    "facts": {
+      "customer.store_credit_30d_after_intent_cents": 2000,
+      "intent.amount_cents": 2000,
+      "intent.has_order": false,
+      "session.identity_verified": true
+    },
+    "outcome": "ALLOW",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "STORE_CREDIT_SINGLE_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "STORE_CREDIT_ROLLING_CAP",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
+  "ticket_anonymous": {
+    "facts": {
+      "intent.has_order": false
+    },
+    "outcome": "ALLOW",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "TICKET_ALLOWED",
+        "ALLOW",
+        null
+      ]
+    ]
+  }
+}

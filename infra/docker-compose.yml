@@ -1,0 +1,21 @@
+name: psa
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: psa
+      POSTGRES_PASSWORD: psa
+      POSTGRES_DB: psa
+    ports:
+      - "${PSA_DB_PORT:-5433}:5432"  # 5433 avoids clashing with a locally installed Postgres
+    volumes:
+      - psa-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U psa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  psa-pgdata:
