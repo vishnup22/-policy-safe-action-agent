@@ -2,6 +2,7 @@
 
 Guidance for Claude Code (and other coding agents) working in this repository.
 Full product context, scope, eval design and sprint plan: **`project_description.md`** — read it before starting any non-trivial task.
+Also: `TASKS.md` (task board — pick work from here and update status), `SETUP.md` (environment), `CONTRIBUTING.md` (workflow, PR checklist, recipes), `AGENTS.md` (rules for other coding agents — keep it consistent with this file).
 
 ## What this is
 **Policy-Safe Action Agent** — a customer-service agent for a fictional retailer ("Larkspur Goods") that can issue refunds, cancel orders and change addresses, but **cannot violate business policy**: the LLM only *proposes* actions; a deterministic, versioned policy engine *decides*; an executor runs approved actions idempotently; everything is logged and replayable.
@@ -84,7 +85,7 @@ feature branch ──PR──► dev ──release PR──► main
   git switch dev && git pull
   git switch -c feat/policy-engine
   ```
-- Branch prefixes: `feat/` (feature), `fix/` (bug), `eval/` (scenarios, eval harness), `ui/` (frontend), `chore/` (tooling, config, docs), `ci/` (pipelines).
+- Branch prefixes: `feat/` (feature), `fix/` (bug), `test/` (tests only), `eval/` (scenarios, eval harness), `ui/` (frontend), `docs/` (documentation), `chore/` (tooling, config), `ci/` (pipelines). Name as `<prefix>/t<day>-<n>-<short-name>` using the `TASKS.md` ID.
 - Commits: Conventional Commits — `feat: …`, `fix: …`, `test: …`, `docs: …`, `chore: …`, `ci: …`, `refactor: …`. Small, focused commits.
 - PRs: `gh pr create --base dev`. Description states what changed, why, test results, and eval numbers if agent behavior changed. Squash-merge into `dev`; delete the branch after merge.
 - Release: `gh pr create --base main --head dev --title "release: <milestone>"`, merged with a merge commit (keeps history), only when CI and the full eval suite are green.
