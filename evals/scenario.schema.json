@@ -1,0 +1,1197 @@
+{
+  "$defs": {
+    "ActionName": {
+      "enum": [
+        "issue_refund",
+        "issue_store_credit",
+        "cancel_order",
+        "update_address",
+        "create_ticket",
+        "escalate_to_human",
+        "schedule_follow_up"
+      ],
+      "title": "ActionName",
+      "type": "string"
+    },
+    "Address": {
+      "additionalProperties": false,
+      "properties": {
+        "line1": {
+          "minLength": 1,
+          "title": "Line1",
+          "type": "string"
+        },
+        "line2": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line2"
+        },
+        "city": {
+          "minLength": 1,
+          "title": "City",
+          "type": "string"
+        },
+        "region": {
+          "description": "State / province code",
+          "minLength": 2,
+          "title": "Region",
+          "type": "string"
+        },
+        "postal_code": {
+          "minLength": 3,
+          "title": "Postal Code",
+          "type": "string"
+        },
+        "country": {
+          "description": "ISO-3166 alpha-2",
+          "maxLength": 2,
+          "minLength": 2,
+          "title": "Country",
+          "type": "string"
+        }
+      },
+      "required": [
+        "line1",
+        "city",
+        "region",
+        "postal_code",
+        "country"
+      ],
+      "title": "Address",
+      "type": "object"
+    },
+    "Assertion": {
+      "additionalProperties": false,
+      "properties": {
+        "entity": {
+          "enum": [
+            "customer",
+            "order",
+            "shipment",
+            "catalog"
+          ],
+          "title": "Entity",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "field": {
+          "description": "Real model field/property; dotted nested paths allowed",
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "op": {
+          "enum": [
+            "eq",
+            "ne",
+            "lt",
+            "lte",
+            "gt",
+            "gte",
+            "in",
+            "not_in",
+            "exists"
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "entity",
+        "id",
+        "field",
+        "op",
+        "value"
+      ],
+      "title": "Assertion",
+      "type": "object"
+    },
+    "CancelOrderArgs": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "cancel_order",
+          "default": "cancel_order",
+          "title": "Action",
+          "type": "string"
+        },
+        "order_id": {
+          "title": "Order Id",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "order_id",
+        "reason"
+      ],
+      "title": "CancelOrderArgs",
+      "type": "object"
+    },
+    "CatalogOverride": {
+      "additionalProperties": false,
+      "properties": {
+        "entity": {
+          "const": "catalog",
+          "title": "Entity",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/OrderItem"
+        }
+      },
+      "required": [
+        "entity",
+        "value"
+      ],
+      "title": "CatalogOverride",
+      "type": "object"
+    },
+    "ClockAdvance": {
+      "additionalProperties": false,
+      "properties": {
+        "at_turn": {
+          "minimum": 1,
+          "title": "At Turn",
+          "type": "integer"
+        },
+        "by": {
+          "description": "Positive ISO-8601 duration, e.g. P2D",
+          "format": "duration",
+          "title": "By",
+          "type": "string"
+        }
+      },
+      "required": [
+        "at_turn",
+        "by"
+      ],
+      "title": "ClockAdvance",
+      "type": "object"
+    },
+    "CreateTicketArgs": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "create_ticket",
+          "default": "create_ticket",
+          "title": "Action",
+          "type": "string"
+        },
+        "order_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Order Id"
+        },
+        "subject": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Subject",
+          "type": "string"
+        },
+        "body": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Body",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject",
+        "body"
+      ],
+      "title": "CreateTicketArgs",
+      "type": "object"
+    },
+    "Customer": {
+      "additionalProperties": false,
+      "properties": {
+        "customer_id": {
+          "pattern": "^cus_[a-z0-9]{6,}$",
+          "title": "Customer Id",
+          "type": "string"
+        },
+        "email": {
+          "description": "Synthetic only; use the reserved example.com domain",
+          "title": "Email",
+          "type": "string"
+        },
+        "full_name": {
+          "title": "Full Name",
+          "type": "string"
+        },
+        "tier": {
+          "$ref": "#/$defs/CustomerTier",
+          "default": "standard"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "default_address": {
+          "$ref": "#/$defs/Address"
+        }
+      },
+      "required": [
+        "customer_id",
+        "email",
+        "full_name",
+        "created_at",
+        "default_address"
+      ],
+      "title": "Customer",
+      "type": "object"
+    },
+    "CustomerOverride": {
+      "additionalProperties": false,
+      "properties": {
+        "entity": {
+          "const": "customer",
+          "title": "Entity",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/Customer"
+        }
+      },
+      "required": [
+        "entity",
+        "value"
+      ],
+      "title": "CustomerOverride",
+      "type": "object"
+    },
+    "CustomerTier": {
+      "enum": [
+        "standard",
+        "plus",
+        "vip"
+      ],
+      "title": "CustomerTier",
+      "type": "string"
+    },
+    "EscalateToHumanArgs": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "escalate_to_human",
+          "default": "escalate_to_human",
+          "title": "Action",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "priority": {
+          "$ref": "#/$defs/EscalationPriority",
+          "default": "normal"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "EscalateToHumanArgs",
+      "type": "object"
+    },
+    "EscalationPriority": {
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "urgent"
+      ],
+      "title": "EscalationPriority",
+      "type": "string"
+    },
+    "Expected": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "enum": [
+            "resolved",
+            "denied",
+            "escalated",
+            "verification_required",
+            "approval_pending"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "final_state": {
+          "items": {
+            "$ref": "#/$defs/Assertion"
+          },
+          "minItems": 1,
+          "title": "Final State",
+          "type": "array"
+        },
+        "executed_actions": {
+          "default": [],
+          "description": "Required successful effects, each exactly once; never agent-visible",
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "cancel_order": "#/$defs/CancelOrderArgs",
+                "create_ticket": "#/$defs/CreateTicketArgs",
+                "escalate_to_human": "#/$defs/EscalateToHumanArgs",
+                "issue_refund": "#/$defs/IssueRefundArgs",
+                "issue_store_credit": "#/$defs/IssueStoreCreditArgs",
+                "schedule_follow_up": "#/$defs/ScheduleFollowUpArgs",
+                "update_address": "#/$defs/UpdateAddressArgs"
+              },
+              "propertyName": "action"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/IssueRefundArgs"
+              },
+              {
+                "$ref": "#/$defs/IssueStoreCreditArgs"
+              },
+              {
+                "$ref": "#/$defs/CancelOrderArgs"
+              },
+              {
+                "$ref": "#/$defs/UpdateAddressArgs"
+              },
+              {
+                "$ref": "#/$defs/CreateTicketArgs"
+              },
+              {
+                "$ref": "#/$defs/EscalateToHumanArgs"
+              },
+              {
+                "$ref": "#/$defs/ScheduleFollowUpArgs"
+              }
+            ]
+          },
+          "title": "Executed Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "outcome",
+        "final_state"
+      ],
+      "title": "Expected",
+      "type": "object"
+    },
+    "Fault": {
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "timeout",
+            "error_5xx",
+            "card_declined",
+            "rate_limited"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "on_call": {
+          "minimum": 1,
+          "title": "On Call",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "tool",
+        "mode",
+        "on_call"
+      ],
+      "title": "Fault",
+      "type": "object"
+    },
+    "ForbiddenAction": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ActionName"
+        },
+        "args_match": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Args Match",
+          "type": "object"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "ForbiddenAction",
+      "type": "object"
+    },
+    "IssueRefundArgs": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "issue_refund",
+          "default": "issue_refund",
+          "title": "Action",
+          "type": "string"
+        },
+        "order_id": {
+          "title": "Order Id",
+          "type": "string"
+        },
+        "amount_cents": {
+          "exclusiveMinimum": 0,
+          "title": "Amount Cents",
+          "type": "integer"
+        },
+        "item_skus": {
+          "default": [],
+          "description": "Items being refunded; empty means order-level refund",
+          "items": {
+            "type": "string"
+          },
+          "title": "Item Skus",
+          "type": "array"
+        },
+        "reason": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "order_id",
+        "amount_cents",
+        "reason"
+      ],
+      "title": "IssueRefundArgs",
+      "type": "object"
+    },
+    "IssueStoreCreditArgs": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "issue_store_credit",
+          "default": "issue_store_credit",
+          "title": "Action",
+          "type": "string"
+        },
+        "customer_id": {
+          "title": "Customer Id",
+          "type": "string"
+        },
+        "order_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Order Id"
+        },
+        "amount_cents": {
+          "exclusiveMinimum": 0,
+          "title": "Amount Cents",
+          "type": "integer"
+        },
+        "reason": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "customer_id",
+        "amount_cents",
+        "reason"
+      ],
+      "title": "IssueStoreCreditArgs",
+      "type": "object"
+    },
+    "ItemCategory": {
+      "enum": [
+        "apparel",
+        "footwear",
+        "home",
+        "kitchen",
+        "accessories",
+        "gift_card"
+      ],
+      "title": "ItemCategory",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "Order": {
+      "additionalProperties": false,
+      "properties": {
+        "order_id": {
+          "pattern": "^ord_[a-z0-9]{6,}$",
+          "title": "Order Id",
+          "type": "string"
+        },
+        "customer_id": {
+          "title": "Customer Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/OrderStatus"
+        },
+        "currency": {
+          "default": "USD",
+          "title": "Currency",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/OrderItem"
+          },
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        },
+        "shipping_cents": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Shipping Cents",
+          "type": "integer"
+        },
+        "tax_cents": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Tax Cents",
+          "type": "integer"
+        },
+        "amount_paid_cents": {
+          "minimum": 0,
+          "title": "Amount Paid Cents",
+          "type": "integer"
+        },
+        "amount_refunded_cents": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Amount Refunded Cents",
+          "type": "integer"
+        },
+        "shipping_address": {
+          "$ref": "#/$defs/Address"
+        },
+        "payment_intent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Stripe test-mode PaymentIntent id, if linked",
+          "title": "Payment Intent Id"
+        },
+        "placed_at": {
+          "format": "date-time",
+          "title": "Placed At",
+          "type": "string"
+        },
+        "shipped_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shipped At"
+        },
+        "delivered_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delivered At"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Free text from the customer. UNTRUSTED: may contain prompt injection.",
+          "title": "Notes"
+        }
+      },
+      "required": [
+        "order_id",
+        "customer_id",
+        "status",
+        "items",
+        "amount_paid_cents",
+        "shipping_address",
+        "placed_at"
+      ],
+      "title": "Order",
+      "type": "object"
+    },
+    "OrderItem": {
+      "additionalProperties": false,
+      "properties": {
+        "sku": {
+          "title": "Sku",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "category": {
+          "$ref": "#/$defs/ItemCategory"
+        },
+        "quantity": {
+          "minimum": 1,
+          "title": "Quantity",
+          "type": "integer"
+        },
+        "unit_price_cents": {
+          "minimum": 0,
+          "title": "Unit Price Cents",
+          "type": "integer"
+        },
+        "final_sale": {
+          "default": false,
+          "title": "Final Sale",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "sku",
+        "name",
+        "category",
+        "quantity",
+        "unit_price_cents"
+      ],
+      "title": "OrderItem",
+      "type": "object"
+    },
+    "OrderOverride": {
+      "additionalProperties": false,
+      "properties": {
+        "entity": {
+          "const": "order",
+          "title": "Entity",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/Order"
+        }
+      },
+      "required": [
+        "entity",
+        "value"
+      ],
+      "title": "OrderOverride",
+      "type": "object"
+    },
+    "OrderStatus": {
+      "enum": [
+        "placed",
+        "paid",
+        "shipped",
+        "delivered",
+        "cancelled",
+        "partially_refunded",
+        "refunded"
+      ],
+      "title": "OrderStatus",
+      "type": "string"
+    },
+    "Persona": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "style": {
+          "minLength": 1,
+          "title": "Style",
+          "type": "string"
+        },
+        "patience": {
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Patience",
+          "type": "integer"
+        },
+        "honesty": {
+          "enum": [
+            "honest",
+            "exaggerates",
+            "adversarial"
+          ],
+          "title": "Honesty",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "style",
+        "patience",
+        "honesty"
+      ],
+      "title": "Persona",
+      "type": "object"
+    },
+    "PolicyChange": {
+      "additionalProperties": false,
+      "properties": {
+        "at_turn": {
+          "minimum": 1,
+          "title": "At Turn",
+          "type": "integer"
+        },
+        "to_version": {
+          "minLength": 1,
+          "title": "To Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "at_turn",
+        "to_version"
+      ],
+      "title": "PolicyChange",
+      "type": "object"
+    },
+    "PolicyRef": {
+      "additionalProperties": false,
+      "properties": {
+        "set": {
+          "minLength": 1,
+          "title": "Set",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "set",
+        "version"
+      ],
+      "title": "PolicyRef",
+      "type": "object"
+    },
+    "ScenarioCategory": {
+      "enum": [
+        "happy_path",
+        "policy_boundary",
+        "policy_bait",
+        "prompt_injection",
+        "identity",
+        "stale_policy",
+        "tool_failure",
+        "idempotency",
+        "multi_intent",
+        "escalation",
+        "follow_up"
+      ],
+      "title": "ScenarioCategory",
+      "type": "string"
+    },
+    "ScheduleFollowUpArgs": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "schedule_follow_up",
+          "default": "schedule_follow_up",
+          "title": "Action",
+          "type": "string"
+        },
+        "due_at": {
+          "format": "date-time",
+          "title": "Due At",
+          "type": "string"
+        },
+        "order_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Order Id"
+        },
+        "note": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "due_at",
+        "note"
+      ],
+      "title": "ScheduleFollowUpArgs",
+      "type": "object"
+    },
+    "Session": {
+      "additionalProperties": false,
+      "properties": {
+        "customer_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Customer Id"
+        },
+        "identity_verified": {
+          "title": "Identity Verified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "customer_id",
+        "identity_verified"
+      ],
+      "title": "Session",
+      "type": "object"
+    },
+    "Shipment": {
+      "additionalProperties": false,
+      "properties": {
+        "shipment_id": {
+          "pattern": "^shp_[a-z0-9]{6,}$",
+          "title": "Shipment Id",
+          "type": "string"
+        },
+        "order_id": {
+          "title": "Order Id",
+          "type": "string"
+        },
+        "carrier": {
+          "title": "Carrier",
+          "type": "string"
+        },
+        "tracking_number": {
+          "title": "Tracking Number",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ShipmentStatus"
+        },
+        "shipped_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shipped At"
+        },
+        "delivered_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delivered At"
+        }
+      },
+      "required": [
+        "shipment_id",
+        "order_id",
+        "carrier",
+        "tracking_number",
+        "status"
+      ],
+      "title": "Shipment",
+      "type": "object"
+    },
+    "ShipmentOverride": {
+      "additionalProperties": false,
+      "properties": {
+        "entity": {
+          "const": "shipment",
+          "title": "Entity",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/Shipment"
+        }
+      },
+      "required": [
+        "entity",
+        "value"
+      ],
+      "title": "ShipmentOverride",
+      "type": "object"
+    },
+    "ShipmentStatus": {
+      "enum": [
+        "label_created",
+        "in_transit",
+        "delivered",
+        "lost",
+        "returned_to_sender"
+      ],
+      "title": "ShipmentStatus",
+      "type": "string"
+    },
+    "UpdateAddressArgs": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "update_address",
+          "default": "update_address",
+          "title": "Action",
+          "type": "string"
+        },
+        "order_id": {
+          "title": "Order Id",
+          "type": "string"
+        },
+        "new_address": {
+          "$ref": "#/$defs/Address"
+        }
+      },
+      "required": [
+        "order_id",
+        "new_address"
+      ],
+      "title": "UpdateAddressArgs",
+      "type": "object"
+    },
+    "WorldSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "now": {
+          "format": "date-time",
+          "title": "Now",
+          "type": "string"
+        },
+        "overrides": {
+          "default": [],
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "catalog": "#/$defs/CatalogOverride",
+                "customer": "#/$defs/CustomerOverride",
+                "order": "#/$defs/OrderOverride",
+                "shipment": "#/$defs/ShipmentOverride"
+              },
+              "propertyName": "entity"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/CustomerOverride"
+              },
+              {
+                "$ref": "#/$defs/OrderOverride"
+              },
+              {
+                "$ref": "#/$defs/ShipmentOverride"
+              },
+              {
+                "$ref": "#/$defs/CatalogOverride"
+              }
+            ]
+          },
+          "title": "Overrides",
+          "type": "array"
+        }
+      },
+      "required": [
+        "seed",
+        "now"
+      ],
+      "title": "WorldSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "category": {
+      "$ref": "#/$defs/ScenarioCategory"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "description": {
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "policy": {
+      "$ref": "#/$defs/PolicyRef"
+    },
+    "world": {
+      "$ref": "#/$defs/WorldSpec"
+    },
+    "session": {
+      "$ref": "#/$defs/Session"
+    },
+    "persona": {
+      "$ref": "#/$defs/Persona"
+    },
+    "goal": {
+      "description": "Hidden from agent",
+      "minLength": 1,
+      "title": "Goal",
+      "type": "string"
+    },
+    "opening_message": {
+      "minLength": 1,
+      "title": "Opening Message",
+      "type": "string"
+    },
+    "max_turns": {
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Max Turns",
+      "type": "integer"
+    },
+    "faults": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Fault"
+      },
+      "title": "Faults",
+      "type": "array"
+    },
+    "policy_change": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PolicyChange"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "clock_advance": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ClockAdvance"
+      },
+      "title": "Clock Advance",
+      "type": "array"
+    },
+    "expected": {
+      "$ref": "#/$defs/Expected"
+    },
+    "forbidden_actions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ForbiddenAction"
+      },
+      "title": "Forbidden Actions",
+      "type": "array"
+    },
+    "tags": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "category",
+    "title",
+    "description",
+    "policy",
+    "world",
+    "session",
+    "persona",
+    "goal",
+    "opening_message",
+    "max_turns",
+    "expected"
+  ],
+  "title": "Scenario",
+  "type": "object"
+}

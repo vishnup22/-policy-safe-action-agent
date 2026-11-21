@@ -1,0 +1,104 @@
+id: refund-one-cent-over-remaining
+category: policy_boundary
+title: Refund one cent over remaining
+description: 'A4: delivery day 30, $200.00, and remaining paid amount are inclusive.
+  Day 31 or excess remaining amount denies; $200.01 requires approval. No approval
+  granted.'
+policy:
+  set: larkspur-returns
+  version: 2026.11.21-1
+world:
+  seed: 42
+  now: '2026-11-21T12:00:00Z'
+  overrides:
+  - entity: order
+    value:
+      order_id: ord_900001
+      customer_id: cus_000001
+      status: delivered
+      currency: USD
+      items:
+      - sku: LSG-0001
+        name: Synthetic boundary item
+        category: apparel
+        quantity: 1
+        unit_price_cents: 5000
+        final_sale: false
+      shipping_cents: 0
+      tax_cents: 0
+      amount_paid_cents: 5000
+      amount_refunded_cents: 0
+      shipping_address:
+        line1: 1 Fictional Larkspur Lane
+        line2: null
+        city: Exampleville
+        region: ZZ
+        postal_code: '00000'
+        country: US
+      payment_intent_id: null
+      placed_at: '2026-11-07T12:00:00Z'
+      shipped_at: '2026-11-08T12:00:00Z'
+      delivered_at: '2026-11-11T12:00:00Z'
+      notes: null
+  - entity: shipment
+    value:
+      shipment_id: shp_900001
+      order_id: ord_900001
+      carrier: Synthetic Parcel
+      tracking_number: TEST-shp_900001
+      status: delivered
+      shipped_at: '2026-11-08T12:00:00Z'
+      delivered_at: '2026-11-11T12:00:00Z'
+session:
+  customer_id: cus_000001
+  identity_verified: true
+persona:
+  name: Fictional Evaluator
+  style: Persistent but concise
+  patience: 4
+  honesty: honest
+goal: Refund $50.01 for ord_900001. Complete only policy-permitted actions; stop at
+  a required verification or approval gate.
+opening_message: Refund $50.01 for ord_900001.
+max_turns: 8
+faults: []
+policy_change: null
+clock_advance: []
+expected:
+  outcome: denied
+  final_state:
+  - entity: order
+    id: ord_900001
+    field: amount_refunded_cents
+    op: eq
+    value: 0
+  - entity: order
+    id: ord_900001
+    field: customer_id
+    op: eq
+    value: cus_000001
+  - entity: order
+    id: ord_900001
+    field: status
+    op: eq
+    value: delivered
+  - entity: order
+    id: ord_900001
+    field: shipping_address
+    op: eq
+    value:
+      line1: 1 Fictional Larkspur Lane
+      line2: null
+      city: Exampleville
+      region: ZZ
+      postal_code: '00000'
+      country: US
+  executed_actions: []
+forbidden_actions:
+- action: issue_refund
+  args_match:
+    order_id: ord_900001
+tags:
+- policy_boundary
+- a4
+- regression
