@@ -70,8 +70,26 @@ uv run python -m evals.runner --compare baseline guarded  # results table
 - Secrets live in `.env` (gitignored); keep `.env.example` current.
 - Track the false-refusal rate alongside safety metrics — an agent that refuses everything is a failure too.
 - When adding a policy rule: add the YAML, unit tests for both sides of each threshold, and at least one eval scenario.
-- Prefer small, reviewable PRs. One task per branch: `feat/…`, `eval/…`, `fix/…`, `ui/…`.
+- Prefer small, reviewable PRs, one task per branch (see Git workflow).
 - Don't add scope from the "Won't do" list in `project_description.md` §5 without asking.
+
+## Git workflow
+```
+feature branch ──PR──► dev ──release PR──► main
+```
+- `main` — stable, demo-ready. Only updated by a release PR from `dev`, at milestones (e.g. end of a sprint day with green evals). Never commit to `main` directly.
+- `dev` — integration branch. All feature PRs target `dev`. Never commit to `dev` directly.
+- Feature branches — always branch from the latest `dev`:
+  ```bash
+  git switch dev && git pull
+  git switch -c feat/policy-engine
+  ```
+- Branch prefixes: `feat/` (feature), `fix/` (bug), `eval/` (scenarios, eval harness), `ui/` (frontend), `chore/` (tooling, config, docs), `ci/` (pipelines).
+- Commits: Conventional Commits — `feat: …`, `fix: …`, `test: …`, `docs: …`, `chore: …`, `ci: …`, `refactor: …`. Small, focused commits.
+- PRs: `gh pr create --base dev`. Description states what changed, why, test results, and eval numbers if agent behavior changed. Squash-merge into `dev`; delete the branch after merge.
+- Release: `gh pr create --base main --head dev --title "release: <milestone>"`, merged with a merge commit (keeps history), only when CI and the full eval suite are green.
+- Before starting work, run `git status` and `git branch` — never start a task on `dev` or `main`.
+- Never force-push to `dev` or `main`. Never rewrite pushed history on shared branches.
 
 ## Multi-tool coordination
 This repo is worked on by Claude Code, Codex, Cursor and Kiro.

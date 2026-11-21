@@ -246,7 +246,7 @@ On any PR touching `policies/`, the agent, or prompts: run the regression subset
 | **Codex** | Parallel work on separate branches: tests, scenario authoring, fault injection; second-opinion PR review | One task per branch; never edits the same files as an in-flight Claude Code task |
 | **Cursor** | Frontend (Next.js), dashboards, quick in-editor fixes | UI only unless explicitly coordinated |
 
-Git rules: one repo, `main` protected, one branch per task (`feat/…`, `eval/…`, `fix/…`), merge only when CI (lint, types, tests, regression gate) is green. Eval numbers — not demo vibes — decide whether a change helped.
+Git rules: feature branches (`feat/…`, `fix/…`, `eval/…`, `ui/…`, `chore/…`, `ci/…`) are cut from `dev` and merged into `dev` by PR; `dev` is promoted to `main` by a release PR at milestones. Merge only when CI (lint, types, tests, regression gate) is green. Full rules in `CLAUDE.md` → Git workflow. Eval numbers — not demo vibes — decide whether a change helped.
 
 ---
 
