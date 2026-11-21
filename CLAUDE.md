@@ -22,6 +22,9 @@ If a task seems to require breaking an invariant, stop and ask.
 ## Planned layout
 ```
 src/psa/
+  domain/     # SHARED CONTRACTS (commerce, actions, decisions, events, reports) — coordinate before editing
+  clock.py    # Clock protocol: SystemClock / SimulatedClock
+  seed/       # deterministic synthetic world generator + fixture builders
   agent/      # LangGraph graph, prompts, LLM client (provider-agnostic)
   policy/     # engine, schema (Pydantic v2), loader
   tools/      # MCP server: read tools + write tools (Stripe test mode, orders DB)
@@ -39,6 +42,7 @@ web/          # Next.js: chat demo, replay/audit viewer, approvals, metrics
 tests/        # unit + integration tests
 infra/        # Dockerfiles, docker-compose
 docs/         # architecture, failure analysis, case studies
+docs/contracts/api.md  # HTTP contract between API and web (mirrors src/psa/domain)
 .kiro/specs/  # Kiro requirements / design / tasks (source of truth for scope)
 ```
 Update this section when the real layout diverges.
@@ -52,12 +56,13 @@ Update this section when the real layout diverges.
 - LLM provider and model are **configuration** (`LLM_PROVIDER`, `LLM_MODEL` env vars) — never hardcode a model ID in code.
 - Keep modules small and pure where possible; side effects live in `tools/` and `executor/` only.
 
-## Commands (planned — fix these once the repo is scaffolded)
+## Commands
 ```bash
-uv sync                                  # install
-uv run ruff check . && uv run ruff format --check .
-uv run pyright
-uv run pytest                            # unit + integration
+uv sync                                  # install (works now)
+uv run ruff check . && uv run ruff format --check .   # works now
+uv run pyright                           # works now
+uv run pytest                            # works now
+# planned — land with Day 1–4 tasks:
 docker compose -f infra/docker-compose.yml up   # full local stack
 uv run python -m evals.runner --suite regression          # fast PR subset
 uv run python -m evals.runner --suite full --trials 4     # nightly / pre-demo
