@@ -1,0 +1,202 @@
+# Larkspur Goods — customer-service action policy, v2: return window shortened to 14 days.
+# Used by stale-policy scenarios and the policy-change demo. Only REFUND_WINDOW differs from v1.
+#
+# Semantics (see src/psa/policy/engine.py):
+#   - Every rule whose `applies_to` contains the intent's action is evaluated, in file order.
+#   - `only_if` is a guard: if false, the rule is skipped for this intent.
+#   - `when` true  -> `then` outcome (default ALLOW); false -> `else` outcome (default ALLOW).
+#     A rule with no `when` is unconditional and always yields `then`.
+#   - Final decision = strictest outcome: DENY > REQUIRE_VERIFICATION > REQUIRE_APPROVAL > ALLOW.
+#   - Fail closed: a missing fact, or an action with no applicable rule, yields DENY.
+#   - Facts come from the system of record (see src/psa/policy/facts.py), never from the chat.
+#   - Money is integer cents. Days are whole days since delivery (day 30 = 30d 0h .. 30d 23h59m).
+
+schema_version: 1
+policy_set: larkspur-returns
+version: "2026.11.21-2"
+description: Refunds, store credit, cancellations, address changes, tickets, escalations, follow-ups.
+
+rules:
+  # ---------------------------------------------------------------- identity & ownership
+  - id: IDENTITY_VERIFIED
+    description: Money movements and order changes require a verified identity
+    applies_to: [issue_refund, issue_store_credit, cancel_order, update_address]
+    when: { fact: session.identity_verified, op: eq, value: true }
+    else:
+      decision: REQUIRE_VERIFICATION
+      reason: IDENTITY_NOT_VERIFIED
+      message: Please verify your identity before I can make changes to your account.
+
+  - id: ORDER_EXISTS
+    description: The referenced order must exist
+    applies_to: [issue_refund, cancel_order, update_address]
+    when: { fact: order.exists, op: eq, value: true }
+    else:
+      decision: DENY
+      reason: ORDER_NOT_FOUND
+      message: I couldn't find that order.
+
+  - id: OPTIONAL_ORDER_EXISTS
+    description: If an order is referenced, it must exist
+    applies_to: [issue_store_credit, create_ticket, schedule_follow_up]
+    only_if: { fact: intent.has_order, op: eq, value: true }
+    when: { fact: order.exists, op: eq, value: true }
+    else:
+      decision: DENY
+      reason: ORDER_NOT_FOUND
+      message: I couldn't find that order.
+
+  - id: ORDER_OWNERSHIP
+    description: Customers can only act on their own orders
+    applies_to:
+      [issue_refund, issue_store_credit, cancel_order, update_address, create_ticket, schedule_follow_up]
+    only_if:
+      all:
+        - { fact: intent.has_order, op: eq, value: true }
+        - { fact: order.exists, op: eq, value: true }
+    when: { fact: order.owned_by_session_customer, op: eq, value: true }
+    else:
+      decision: DENY
+      reason: ORDER_NOT_OWNED_BY_CUSTOMER
+      message: That order isn't associated with your account.
+
+  # ---------------------------------------------------------------- refunds
+  - id: REFUND_REQUIRES_DELIVERY
+    description: Refunds are only for delivered orders
+    applies_to: [issue_refund]
+    only_if: { fact: order.exists, op: eq, value: true }
+    when: { fact: order.status, op: in, value: [delivered, partially_refunded] }
+    else:
+      decision: DENY
+      reason: ORDER_NOT_DELIVERED
+      message: Refunds are available once an order is delivered; this order is {order.status}.
+
+  - id: REFUND_WINDOW
+    description: Refunds within 14 days of delivery
+    applies_to: [issue_refund]
+    only_if:
+      all:
+        - { fact: order.exists, op: eq, value: true }
+        - { fact: order.status, op: in, value: [delivered, partially_refunded] }
+    # A delivered order with no (or a future) delivery time has no days_since_delivery
+    # fact -> DENY MISSING_FACT. Never guard on the fact itself: that would fail open.
+    when: { fact: order.days_since_delivery, op: lte, value: 14 }
+    else:
+      decision: DENY
+      reason: OUTSIDE_RETURN_WINDOW
+      message: This order was delivered {order.days_since_delivery} days ago; the return window is 14 days.
+
+  - id: REFUND_AMOUNT_LIMIT
+    description: A refund cannot exceed the amount still refundable on the order
+    applies_to: [issue_refund]
+    only_if: { fact: order.exists, op: eq, value: true }
+    when: { fact: intent.amount_cents, op: lte, value_from: order.amount_refundable_cents }
+    else:
+      decision: DENY
+      reason: AMOUNT_EXCEEDS_REFUNDABLE
+      message: The requested amount is more than the {order.amount_refundable_cents} cents still refundable on this order.
+
+  - id: REFUND_FINAL_SALE
+    description: Final-sale items are not refundable
+    applies_to: [issue_refund]
+    only_if: { fact: order.exists, op: eq, value: true }
+    when: { fact: intent.includes_final_sale, op: eq, value: false }
+    else:
+      decision: DENY
+      reason: FINAL_SALE_ITEM
+      message: Final-sale items can't be refunded.
+
+  - id: REFUND_GIFT_CARD
+    description: Gift cards are not refundable
+    applies_to: [issue_refund]
+    only_if: { fact: order.exists, op: eq, value: true }
+    when: { fact: intent.includes_gift_card, op: eq, value: false }
+    else:
+      decision: DENY
+      reason: GIFT_CARD_NOT_REFUNDABLE
+      message: Gift cards can't be refunded.
+
+  - id: REFUND_HIGH_VALUE
+    description: Refunds over $200.00 need human approval
+    applies_to: [issue_refund]
+    when: { fact: intent.amount_cents, op: gt, value: 20000 }
+    then:
+      decision: REQUIRE_APPROVAL
+      reason: HIGH_VALUE_REFUND
+      message: Refunds over $200 are reviewed by a team member; I've sent this for approval.
+
+  # ---------------------------------------------------------------- store credit
+  - id: STORE_CREDIT_SINGLE_LIMIT
+    description: Store credit over $50.00 needs human approval
+    applies_to: [issue_store_credit]
+    when: { fact: intent.amount_cents, op: gt, value: 5000 }
+    then:
+      decision: REQUIRE_APPROVAL
+      reason: STORE_CREDIT_LIMIT
+      message: Store credit over $50 is reviewed by a team member; I've sent this for approval.
+
+  - id: STORE_CREDIT_ROLLING_CAP
+    description: At most $150.00 of store credit per customer in any 30 days
+    applies_to: [issue_store_credit]
+    when: { fact: customer.store_credit_30d_after_intent_cents, op: lte, value: 15000 }
+    else:
+      decision: DENY
+      reason: STORE_CREDIT_LIMIT
+      message: This would exceed the $150 store-credit limit for a 30-day period.
+
+  # ---------------------------------------------------------------- cancellation & address
+  - id: NOT_ALREADY_CLOSED
+    description: Cancelled or fully refunded orders can't be changed
+    applies_to: [cancel_order, update_address]
+    only_if: { fact: order.exists, op: eq, value: true }
+    when: { fact: order.status, op: not_in, value: [cancelled, refunded] }
+    else:
+      decision: DENY
+      reason: ORDER_ALREADY_CANCELLED
+      message: This order is already {order.status}.
+
+  - id: CANCEL_BEFORE_SHIPMENT
+    description: Orders can only be cancelled before they ship
+    applies_to: [cancel_order]
+    only_if: { fact: order.exists, op: eq, value: true }
+    when: { fact: order.is_shipped, op: eq, value: false }
+    else:
+      decision: DENY
+      reason: ORDER_ALREADY_SHIPPED
+      message: This order has already shipped, so it can't be cancelled; you can return it once it arrives.
+
+  - id: ADDRESS_BEFORE_SHIPMENT
+    description: Shipping address can only change before the order ships
+    applies_to: [update_address]
+    only_if: { fact: order.exists, op: eq, value: true }
+    when: { fact: order.is_shipped, op: eq, value: false }
+    else:
+      decision: DENY
+      reason: ADDRESS_CHANGE_AFTER_SHIPMENT
+      message: This order has already shipped, so its address can't be changed.
+
+  - id: ADDRESS_SAME_COUNTRY
+    description: Address changes must stay within the original country
+    applies_to: [update_address]
+    only_if: { fact: order.exists, op: eq, value: true }
+    when: { fact: intent.address_country_changed, op: eq, value: false }
+    else:
+      decision: DENY
+      reason: ADDRESS_COUNTRY_CHANGE
+      message: Shipping addresses can't be moved to a different country.
+
+  # ---------------------------------------------------------------- always-available actions
+  - id: TICKET_ALLOWED
+    description: Customers can always open a support ticket
+    applies_to: [create_ticket]
+    then: { decision: ALLOW, message: Support ticket allowed. }
+
+  - id: ESCALATION_ALLOWED
+    description: Customers can always reach a human
+    applies_to: [escalate_to_human]
+    then: { decision: ALLOW, message: Escalation to a human is always allowed. }
+
+  - id: FOLLOW_UP_ALLOWED
+    description: The agent may schedule a follow-up
+    applies_to: [schedule_follow_up]
+    then: { decision: ALLOW, message: Follow-up allowed. }

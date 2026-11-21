@@ -41,7 +41,7 @@ Fill in `.env`:
 | `LLM_MODEL` | *(provider model ID)* | Never hardcoded in code |
 | `LLM_API_KEY` | `…` | Key for the chosen provider |
 | `SIM_LLM_MODEL` | *(model ID)* | Model for the user simulator (can differ from agent) |
-| `DATABASE_URL` | `postgresql+psycopg://psa:psa@localhost:5432/psa` | Local Postgres from docker compose |
+| `DATABASE_URL` | `postgresql+psycopg://psa:psa@localhost:5433/psa` | Local Postgres from docker compose |
 | `STRIPE_SECRET_KEY` | `sk_test_…` | **Test mode only** — app refuses `sk_live_` keys |
 | `LANGSMITH_API_KEY` | `…` | Optional |
 | `LANGSMITH_TRACING` | `true` | Optional |
@@ -108,7 +108,7 @@ Use Stripe's test card numbers only. Seeded orders are linked to test-mode Payme
 | Symptom | Fix |
 |---|---|
 | `LF will be replaced by CRLF` warnings | Repo uses `.gitattributes` (LF). Run `git add --renormalize .` once. |
-| Port 5432 already in use | Stop the local Postgres service or change the host port in `infra/docker-compose.yml` |
+| Port 5433 already in use | Set `PSA_DB_PORT` to a free port and update `DATABASE_URL` to match (default 5433 avoids a locally installed Postgres on 5432) |
 | App exits with "live Stripe key detected" | Working as intended — use an `sk_test_` key |
 | `uv` not found after install | Open a new terminal so PATH updates |
 | Docker commands hang on Windows | Start Docker Desktop and wait for the engine to be running |

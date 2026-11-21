@@ -48,33 +48,42 @@ Merge order: any order. A and B both only *read* `src/psa/domain/`, so they don'
 ### Lane A — Policy engine, facts, Postgres store · Claude Code · `feat/t1-a-policy-engine-and-store`
 Absorbs former T1.4, T2.1, T2.3. Goal: the deterministic heart of the system, fully tested.
 
-- [ ] **A1 Policy schema & loader** (`src/psa/policy/schema.py`, `loader.py`)
+**Status: done — PR pending.** 164 tests (140 + 24 Postgres), policy coverage ≥96%, pyright 0 errors.
+
+**Notes for other lanes (read these):**
+- Policy files live at **`policies/<policy_set>/<version>.yaml`**: `policies/larkspur-returns/2026.11.21-1.yaml` (v1, 30-day window) and **`2026.11.21-2.yaml` (v2, 14-day window — use for `stale_policy` scenarios)**. Everything else is identical between versions.
+- Fact names available to policies: `session.identity_verified`, `session.has_customer`, `intent.has_order`, `intent.amount_cents`, `intent.items_in_order`, `intent.includes_final_sale`, `intent.includes_gift_card`, `intent.address_country_changed`, `intent.follow_up_hours_ahead`, `order.exists`, `order.status`, `order.owned_by_session_customer`, `order.days_since_delivery`, `order.amount_refundable_cents`, `order.is_shipped`, `customer.tier`, `customer.store_credit_30d_cents`, `customer.store_credit_30d_after_intent_cents`.
+- Golden expected decisions for 26 cases: `tests/policy/golden/decisions_v1.json` — the authoritative reference for scenario expected outcomes.
+- Local Docker Postgres runs on **port 5433** (5432 is often taken by a native install). CI uses 5432 via `DATABASE_URL`.
+- Follow-up for the domain owner: add `ITEM_NOT_IN_ORDER` and `FOLLOW_UP_OUT_OF_RANGE` reason codes (today a refund naming a foreign SKU fails closed as `MISSING_FACT`).
+
+- [x] **A1 Policy schema & loader** (`src/psa/policy/schema.py`, `loader.py`)
   - Pydantic models for a policy set: `policy_set`, `version`, `rules[]` with `id`, `description`, `applies_to: [ActionName]`, `when` condition tree, `then` / `else` → `{decision, reason}`.
   - Condition tree: `all` / `any` / `not` combinators (max depth 4) over leaf predicates `{fact, op, value | value_from}`.
   - Closed operator set: `eq, ne, lt, lte, gt, gte, in, not_in, exists`. **No `eval`/`exec`/expression strings.**
   - Loader validates: unique rule IDs, known `ActionName`s, known fact names (registry from A2), known `ReasonCode`s, type compatibility (e.g. `lte` needs numbers/datetimes), and that every `ActionName` has ≥1 applicable rule. Errors name the file, rule ID and field.
-- [ ] **A2 Fact registry & resolver** (`src/psa/policy/facts.py`, `src/psa/clock.py`)
+- [x] **A2 Fact registry & resolver** (`src/psa/policy/facts.py`, `src/psa/clock.py`)
   - Typed registry of fact names → resolver functions, e.g. `order.status`, `order.days_since_delivery`, `order.amount_refundable_cents`, `order.has_final_sale_items`, `order.contains_gift_card`, `order.owned_by_session_customer`, `order.shipped`, `intent.amount_cents`, `intent.new_address.country_changed`, `session.identity_verified`, `customer.tier`, `customer.store_credit_issued_30d_cents`.
   - Resolver reads from a `FactSource` protocol (system-of-record lookups), **never** from conversation text or `intent.justification`.
   - `Clock` protocol with `SystemClock` and `SimulatedClock` (advanceable) — used for all time facts.
   - Missing/unresolvable fact → explicit `MissingFact` result (engine fails closed).
-- [ ] **A3 Engine** (`src/psa/policy/engine.py`)
+- [x] **A3 Engine** (`src/psa/policy/engine.py`)
   - `evaluate(intent, policy_set, facts) -> Decision` — pure, deterministic, no I/O.
   - Evaluates every applicable rule, records each `RuleResult`, combines with `strictest()`.
   - Fail closed: unknown action / no applicable rule → `DENY NO_APPLICABLE_RULE`; missing fact → `DENY MISSING_FACT`.
   - `facts_snapshot` contains exactly the facts read. Customer-safe `message` per rule (templated, e.g. "Delivered 41 days ago; return window is 30 days").
-- [ ] **A4 Policy set v1** (`policies/larkspur-returns.yaml`, version `2026.11.21-1`)
+- [x] **A4 Policy set v1** (`policies/larkspur-returns/2026.11.21-1.yaml`; plus v2 `2026.11.21-2.yaml` with a 14-day window)
   - Rules for all 7 actions: refund window (30 days after delivery), refund ≤ refundable amount, high-value refund > $200 → approval, final-sale / gift-card not refundable, identity verified for any money/order change, order ownership, cancel only before shipment, address change only before shipment and same country, store credit cap ($50 without approval, 30-day rolling cap $150), tickets/escalations/follow-ups always allowed for verified-or-not sessions (with ownership check when `order_id` given).
-- [ ] **A5 Tests** (`tests/policy/`)
+- [x] **A5 Tests** (`tests/policy/`)
   - Boundary tests on **both sides** of every threshold (day 30 / 31, $200.00 / $200.01, refundable exactly / +1 cent).
   - Hypothesis property tests: adding a DENY rule never makes the outcome less strict; outcome is deterministic for identical inputs; missing any required fact never yields ALLOW.
   - Loader rejection tests for every validation rule in A1.
   - Golden snapshot: a table of ~25 (intent, facts) → expected Decision checked into `tests/policy/golden/`.
-- [ ] **A6 Postgres store** (`src/psa/store/`, `alembic/`, `infra/docker-compose.yml`)
-  - SQLAlchemy 2 models: customers, orders, order_items, shipments, payments, store_credits, idempotency_keys, approvals, follow_ups, **events**.
+- [x] **A6 Postgres store** (`src/psa/store/`, `alembic/`, `infra/docker-compose.yml`)
+  - SQLAlchemy 2 models: customers, orders, order_items, shipments, refunds, store_credits, idempotency_keys, conversations, approvals, follow_ups, **events**.
   - `events` is append-only: unique `(conversation_id, seq)`, and a Postgres trigger that **rejects UPDATE and DELETE**.
   - Alembic initial migration; docker-compose with `postgres:16` (`psa/psa/psa`).
-  - Repository layer: `EventLog.append()` (gap-free seq under concurrency via row lock or `SELECT … FOR UPDATE`), `EventLog.read(conversation_id)`, `CommerceRepo` implementing A2's `FactSource`.
+  - Repository layer: `EventLog.append()` (gap-free seq via `UPDATE conversations SET next_seq = next_seq + 1 … RETURNING` row lock; DB CHECK requires `policy_version` on `policy_decision`/`action_executed`), `EventLog.read(conversation_id)`, `CommerceRepo` implementing A2's `FactSource`.
   - Integration tests marked `@pytest.mark.db` (skip when `DATABASE_URL` unreachable): trigger blocks update/delete, concurrent appends keep seq gap-free.
 - **Acceptance:** all checks green in CI (incl. Postgres service); ≥95% line coverage on `src/psa/policy/`; `uv run python -m psa.policy.check policies/` validates the policy set and prints rule summary.
 
