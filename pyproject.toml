@@ -1,0 +1,73 @@
+[project]
+name = "policy-safe-action-agent"
+version = "0.1.0"
+description = "Customer-service AI agent that can take real actions but cannot violate policy: the LLM proposes, a versioned policy engine decides."
+readme = "project_description.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "pyyaml>=6.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14",
+    "psycopg[binary]>=3.2",
+    "httpx>=0.27",
+    "stripe>=11.0",
+    "langgraph>=0.2.60",
+    "langchain-core>=0.3",
+    "mcp>=1.2",
+    "opentelemetry-api>=1.28",
+    "opentelemetry-sdk>=1.28",
+    "langsmith>=0.2",
+    "tenacity>=9.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "hypothesis>=6.120",
+    "ruff>=0.8",
+    "pyright>=1.1.390",
+    "types-pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/psa", "evals"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "evals", "tests"]
+extend-exclude = ["web"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "S", "PT", "TID"]
+ignore = ["S101"]  # assert is fine in tests
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "PT011"]
+
+[tool.pyright]
+include = ["src", "evals", "tests"]
+exclude = ["web", "**/node_modules", "**/.venv"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+strict = ["src/psa/domain", "src/psa/policy", "src/psa/executor"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "db: requires a running Postgres (DATABASE_URL); skipped otherwise",
+    "llm: calls a real LLM provider; skipped unless LLM_API_KEY is set",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
