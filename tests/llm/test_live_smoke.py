@@ -1,4 +1,4 @@
-"""Real provider smoke test. Skipped unless LLM_API_KEY and LLM_MODEL are set (costs money)."""
+"""Real model smoke test. Opt in with RUN_LIVE_LLM=1 (uses LLM_* env; paid APIs cost money)."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ from psa.llm import ToolSpec, client_from_env
 pytestmark = [
     pytest.mark.llm,
     pytest.mark.skipif(
-        not (os.environ.get("LLM_API_KEY") and os.environ.get("LLM_MODEL")),
-        reason="set LLM_API_KEY and LLM_MODEL to run live LLM tests",
+        not (os.environ.get("RUN_LIVE_LLM") == "1" and os.environ.get("LLM_MODEL")),
+        reason="set RUN_LIVE_LLM=1 and LLM_MODEL (plus LLM_PROVIDER/LLM_API_KEY) to run",
     ),
 ]
 

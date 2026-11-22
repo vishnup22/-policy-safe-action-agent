@@ -10,7 +10,7 @@ Also: `TASKS.md` (task board — pick work from here and update status), `SETUP.
 It is a 10-day, production-grade portfolio POC. Measured results (baseline vs guarded) matter more than features.
 
 ## Architecture invariants — never break these
-1. The LLM **never calls side-effecting tools directly**. It gets read tools + `propose_action` only. Write tools are reachable only through the policy engine → executor path.
+1. The LLM **never calls side-effecting tools directly**. In the guarded agent, every action tool the model sees (`issue_refund`, …, or the generic `propose_action`) only creates a *proposal*; write tools are reachable only through the policy engine → executor path. The baseline sees the same tool names but executes directly — that is the experiment.
 2. Policy decisions use **facts from the system of record** (DB / tool results), never claims made in the conversation.
 3. Policies are **versioned YAML data** in `policies/`, evaluated with a closed operator set. No `eval()`, no `exec()`, no free-form expressions, no policy logic in prompts for the guarded agent.
 4. Decision precedence: `DENY > REQUIRE_VERIFICATION > REQUIRE_APPROVAL > ALLOW`. Every decision returns rule IDs + reason codes.
