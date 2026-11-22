@@ -1383,6 +1383,8 @@
       "customer.store_credit_30d_after_intent_cents": 5001,
       "intent.amount_cents": 5001,
       "intent.has_order": false,
+      "intent.targets_session_customer": true,
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "REQUIRE_APPROVAL",
@@ -1390,6 +1392,11 @@
     "rules": [
       [
         "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "STORE_CREDIT_OWN_ACCOUNT",
         "ALLOW",
         null
       ],
@@ -1410,6 +1417,8 @@
       "customer.store_credit_30d_after_intent_cents": 17000,
       "intent.amount_cents": 5000,
       "intent.has_order": false,
+      "intent.targets_session_customer": true,
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -1417,6 +1426,11 @@
     "rules": [
       [
         "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "STORE_CREDIT_OWN_ACCOUNT",
         "ALLOW",
         null
       ],
@@ -1437,6 +1451,8 @@
       "customer.store_credit_30d_after_intent_cents": 2000,
       "intent.amount_cents": 2000,
       "intent.has_order": false,
+      "intent.targets_session_customer": true,
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "ALLOW",
@@ -1444,6 +1460,11 @@
     "rules": [
       [
         "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "STORE_CREDIT_OWN_ACCOUNT",
         "ALLOW",
         null
       ],

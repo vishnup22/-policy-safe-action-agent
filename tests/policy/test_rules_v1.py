@@ -233,6 +233,16 @@ def test_store_credit_outside_window_not_counted() -> None:
     assert run(store_credit(5000), credits=credits).outcome is D.ALLOW
 
 
+def test_store_credit_to_another_customers_account_denied() -> None:
+    from psa.domain import IssueStoreCreditArgs
+    from tests.policy.helpers import intent
+
+    other = intent(IssueStoreCreditArgs(customer_id=BOB, amount_cents=1000, reason="r"))
+    decision = run(other)
+    assert decision.outcome is D.DENY
+    assert decision.reason_codes == (ReasonCode.ORDER_NOT_OWNED_BY_CUSTOMER,)
+
+
 def test_store_credit_for_someone_elses_order_denied() -> None:
     decision = run(
         store_credit(1000, order_id="ord_bob0001"), order("ord_bob0001", customer_id=BOB)

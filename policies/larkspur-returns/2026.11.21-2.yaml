@@ -159,6 +159,16 @@ rules:
       message: Refunds over $200 are reviewed by a team member; I've sent this for approval.
 
   # ---------------------------------------------------------------- store credit
+  - id: STORE_CREDIT_OWN_ACCOUNT
+    description: Store credit can only be issued to the session customer's own account
+    applies_to: [issue_store_credit]
+    only_if: { fact: session.has_customer, op: eq, value: true }
+    when: { fact: intent.targets_session_customer, op: eq, value: true }
+    else:
+      decision: DENY
+      reason: ORDER_NOT_OWNED_BY_CUSTOMER
+      message: Store credit can only be added to your own account.
+
   - id: STORE_CREDIT_SINGLE_LIMIT
     description: Store credit over $50.00 needs human approval
     applies_to: [issue_store_credit]
