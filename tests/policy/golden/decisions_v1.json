@@ -7,6 +7,7 @@
       "order.is_shipped": false,
       "order.owned_by_session_customer": true,
       "order.status": "paid",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "ALLOW",
@@ -52,6 +53,7 @@
       "order.is_shipped": false,
       "order.owned_by_session_customer": true,
       "order.status": "paid",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -97,6 +99,7 @@
       "order.is_shipped": true,
       "order.owned_by_session_customer": true,
       "order.status": "shipped",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -141,6 +144,7 @@
       "order.is_shipped": false,
       "order.owned_by_session_customer": true,
       "order.status": "cancelled",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -180,6 +184,7 @@
       "order.is_shipped": true,
       "order.owned_by_session_customer": true,
       "order.status": "shipped",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -219,6 +224,7 @@
       "order.is_shipped": false,
       "order.owned_by_session_customer": true,
       "order.status": "paid",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "ALLOW",
@@ -279,7 +285,7 @@
         null
       ],
       [
-        "ORDER_OWNERSHIP",
+        "REFERENCED_ORDER_OWNERSHIP",
         "ALLOW",
         null
       ],
@@ -306,7 +312,7 @@
         null
       ],
       [
-        "ORDER_OWNERSHIP",
+        "REFERENCED_ORDER_OWNERSHIP",
         "ALLOW",
         null
       ],
@@ -329,6 +335,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "REQUIRE_APPROVAL",
@@ -386,6 +393,70 @@
       ]
     ]
   },
+  "refund_anonymous": {
+    "facts": {
+      "intent.amount_cents": 3200,
+      "intent.has_order": true,
+      "intent.includes_final_sale": false,
+      "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
+      "order.amount_refundable_cents": 3200,
+      "order.days_since_delivery": 10,
+      "order.exists": true,
+      "order.status": "delivered",
+      "session.has_customer": false,
+      "session.identity_verified": false
+    },
+    "outcome": "REQUIRE_VERIFICATION",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "REQUIRE_VERIFICATION",
+        "IDENTITY_NOT_VERIFIED"
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_FINAL_SALE",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_GIFT_CARD",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
   "refund_day_30": {
     "facts": {
       "intent.amount_cents": 3200,
@@ -398,6 +469,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "ALLOW",
@@ -467,6 +539,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -536,6 +609,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "ALLOW",
@@ -605,6 +679,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "partially_refunded",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -674,6 +749,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -741,6 +817,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -800,6 +877,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -869,6 +947,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "ALLOW",
@@ -940,6 +1019,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -1009,6 +1089,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": false
     },
     "outcome": "DENY",
@@ -1077,6 +1158,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "shipped",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -1141,6 +1223,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": false,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": true
     },
     "outcome": "DENY",
@@ -1237,6 +1320,7 @@
       "order.exists": true,
       "order.owned_by_session_customer": true,
       "order.status": "delivered",
+      "session.has_customer": true,
       "session.identity_verified": false
     },
     "outcome": "REQUIRE_VERIFICATION",
