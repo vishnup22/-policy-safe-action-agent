@@ -51,6 +51,9 @@ CASES: dict[str, Callable[[], Decision]] = {
     ),
     "refund_missing_delivery_time": lambda: run(refund(), order(delivered_ago=None)),
     "refund_unverified": lambda: run(refund(), order(), sess=session(verified=False)),
+    "refund_anonymous": lambda: run(
+        refund(), order(), sess=session(verified=False, customer_id=None)
+    ),
     "refund_other_customer": lambda: run(refund(), order(customer_id=BOB)),
     "refund_unknown_order": lambda: run(refund(order_id="ord_missing1")),
     "refund_multiple_violations": lambda: run(

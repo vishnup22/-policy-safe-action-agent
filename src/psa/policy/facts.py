@@ -277,6 +277,13 @@ def _has_order(ctx: FactContext) -> FactValue | MissingFact:
     return ctx.order_id() is not None
 
 
+def _targets_session_customer(ctx: FactContext) -> FactValue | MissingFact:
+    args = ctx.intent.args
+    if not isinstance(args, IssueStoreCreditArgs):
+        return MissingFact("action has no target customer")
+    return ctx.session.customer_id is not None and args.customer_id == ctx.session.customer_id
+
+
 # ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
@@ -321,6 +328,13 @@ _SPECS: tuple[FactSpec, ...] = (
         "Refund targets at least one gift card",
         _includes_gift_card,
         _REFUND,
+    ),
+    FactSpec(
+        "intent.targets_session_customer",
+        FactType.BOOL,
+        "Store credit is addressed to the session's own customer account",
+        _targets_session_customer,
+        frozenset({ActionName.ISSUE_STORE_CREDIT}),
     ),
     FactSpec(
         "intent.address_country_changed",

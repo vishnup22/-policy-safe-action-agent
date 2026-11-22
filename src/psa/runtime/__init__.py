@@ -1,4 +1,8 @@
-"""Agent runtime ports (contracts) and, from Day 2, their implementations."""
+"""Agent runtime ports (contracts) and their implementation.
+
+Import the implementation from `psa.runtime.factory` (not re-exported here, so consumers of the
+ports don't pull in the agent stack).
+"""
 
 from psa.runtime.ports import (
     AgentRuntime,
