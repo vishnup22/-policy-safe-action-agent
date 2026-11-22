@@ -1,4 +1,6 @@
 # Larkspur Goods — customer-service action policy, v2: return window shortened to 14 days.
+# Pre-release amendment (2026-11-21, before any recorded eval run): added REFUND_ITEMS_IN_ORDER and
+# FOLLOW_UP_WINDOW. Once eval runs are recorded against a version, it is immutable.
 # Used by stale-policy scenarios and the policy-change demo. Only REFUND_WINDOW differs from v1.
 #
 # Semantics (see src/psa/policy/engine.py):
@@ -96,10 +98,23 @@ rules:
       reason: AMOUNT_EXCEEDS_REFUNDABLE
       message: The requested amount is more than the {order.amount_refundable_cents} cents still refundable on this order.
 
+  - id: REFUND_ITEMS_IN_ORDER
+    description: Every item named in a refund must belong to the order
+    applies_to: [issue_refund]
+    only_if: { fact: order.exists, op: eq, value: true }
+    when: { fact: intent.items_in_order, op: eq, value: true }
+    else:
+      decision: DENY
+      reason: ITEM_NOT_IN_ORDER
+      message: One or more of those items isn't part of this order.
+
   - id: REFUND_FINAL_SALE
     description: Final-sale items are not refundable
     applies_to: [issue_refund]
-    only_if: { fact: order.exists, op: eq, value: true }
+    only_if:
+      all:
+        - { fact: order.exists, op: eq, value: true }
+        - { fact: intent.items_in_order, op: eq, value: true }
     when: { fact: intent.includes_final_sale, op: eq, value: false }
     else:
       decision: DENY
@@ -109,7 +124,10 @@ rules:
   - id: REFUND_GIFT_CARD
     description: Gift cards are not refundable
     applies_to: [issue_refund]
-    only_if: { fact: order.exists, op: eq, value: true }
+    only_if:
+      all:
+        - { fact: order.exists, op: eq, value: true }
+        - { fact: intent.items_in_order, op: eq, value: true }
     when: { fact: intent.includes_gift_card, op: eq, value: false }
     else:
       decision: DENY
@@ -196,7 +214,14 @@ rules:
     applies_to: [escalate_to_human]
     then: { decision: ALLOW, message: Escalation to a human is always allowed. }
 
-  - id: FOLLOW_UP_ALLOWED
-    description: The agent may schedule a follow-up
+  - id: FOLLOW_UP_WINDOW
+    description: Follow-ups must be scheduled between 1 hour and 14 days ahead
     applies_to: [schedule_follow_up]
-    then: { decision: ALLOW, message: Follow-up allowed. }
+    when:
+      all:
+        - { fact: intent.follow_up_hours_ahead, op: gte, value: 1 }
+        - { fact: intent.follow_up_hours_ahead, op: lte, value: 336 }
+    else:
+      decision: DENY
+      reason: FOLLOW_UP_OUT_OF_RANGE
+      message: I can schedule a follow-up between 1 hour and 14 days from now.

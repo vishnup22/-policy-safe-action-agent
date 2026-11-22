@@ -78,6 +78,8 @@ CASES: dict[str, Callable[[], Decision]] = {
     "ticket_anonymous": lambda: run(ticket(), sess=session(verified=False, customer_id=None)),
     "escalate_anonymous": lambda: run(escalate(), sess=session(verified=False, customer_id=None)),
     "follow_up_own_order": lambda: run(follow_up(), order()),
+    "follow_up_too_far": lambda: run(follow_up(hours=337), order()),
+    "refund_foreign_sku": lambda: run(refund(100, skus=("LG-NOPE-000",)), order()),
 }
 
 
