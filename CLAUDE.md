@@ -67,6 +67,9 @@ uv run alembic upgrade head              # apply migrations to DATABASE_URL
 uv run alembic revision --autogenerate -m "..."   # new migration (review it; drift test enforces sync)
 uv run python -m psa.policy.check policies/       # validate all policy versions
 UPDATE_GOLDEN=1 uv run pytest tests/policy/test_golden.py  # only for intended policy changes
+uv run python -m psa.runtime.demo [baseline]      # scripted end-to-end demo against Postgres
+uv run python -m psa.tools.mcp_server             # MCP server: read tools + propose_action
+uv run pytest -m llm                              # live LLM smoke tests (needs LLM_API_KEY, costs money)
 # planned — land with Day 2–4 tasks:
 docker compose -f infra/docker-compose.yml up   # full local stack
 uv run python -m evals.runner --suite regression          # fast PR subset

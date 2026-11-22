@@ -175,30 +175,40 @@ Merged to `dev` **before** lanes D–F start.
 ### Lane D — LLM client, tools, executor, baseline + guarded agents, simulator · Claude Code · `feat/t2-d-agent-runtime`
 Absorbs former T2.1, T2.3, T3.1–T3.3, T4.1. Goal: both agents run end-to-end against Postgres, behind `AgentRuntime`.
 
-- [ ] **D1 LLM client** (`src/psa/llm/`)
+**Status: done — PR pending.** 325 tests (1 live-LLM test skipped without a key); tools ≥95%, executor 96%, total 94% coverage. `uv run python -m psa.runtime.demo [baseline]` shows guarded DENY vs baseline executing the same out-of-window refund.
+
+**Integration notes for Lane E (read these):**
+- `from psa.runtime.factory import build_runtime` satisfies `RuntimeFactory`: `build_runtime(config, sessions=..., clock=...)`. Tests/demos may also pass `llm=ScriptedLLM(...)`, `payments=SimulatedStripe()`. Real LLM: `LLM_*` env; simulator: `LLMUserSimulator(client_from_env("SIM_LLM"))` from `evals.simulator`.
+- **Event invariant:** every `action_executed` is preceded by an `action_proposed` with the full intent (same `intent_id`) — for BOTH systems. Only the guarded system emits `policy_decision`. Duplicates (same idempotency key) emit **no** second `action_executed`. Failed attempts emit `action_failed` (one per attempt).
+- Fault `tool` names = tool names: read tools (`get_order`, …) and action names (`issue_refund`, …).
+- New table `llm_transcripts` (migration `0002`); run `alembic upgrade head` in runner schemas.
+- Policy changes in this lane: anonymous visitors get `REQUIRE_VERIFICATION` (not DENY) for money/order changes; store credit must target the session customer (`STORE_CREDIT_OWN_ACCOUNT`). Golden snapshot updated.
+- Implemented provider: `anthropic` (official SDK, `LLM_FALLBACKS=default` server-side refusal fallbacks, `LLM_EFFORT`). Other providers: implement `psa.llm.LLMClient`.
+
+- [x] **D1 LLM client** (`src/psa/llm/`)
   - Provider-agnostic `LLMClient.complete(messages, tools) -> ModelResponse` (text, tool calls, usage, latency, cost). Adapters selected by `LLM_PROVIDER` / `LLM_MODEL`; no hardcoded model IDs.
   - Retries with backoff on 429/5xx/timeouts; per-call `MODEL_CALL` event with tokens, latency, cost (price table in config).
   - `ScriptedLLM` for tests: deterministic tool-call scripts, zero network.
-- [ ] **D2 Tool layer** (`src/psa/tools/`)
+- [x] **D2 Tool layer** (`src/psa/tools/`)
   - Read tools: `get_order`, `list_customer_orders`, `get_shipment_status`, `get_customer_profile`, `lookup_policy` (rule descriptions only). Order `notes` returned inside an explicit `untrusted_customer_text` field.
   - Write tools: `issue_refund` (Stripe **test mode**; a local `stripe-sim` adapter when no key), `issue_store_credit`, `cancel_order`, `update_address`, `create_ticket`, `escalate_to_human`, `schedule_follow_up`. DB changes and the external call share one idempotency key.
   - **Live-key guard:** any `sk_live_` key aborts startup. Fault-injection hook driven by `RuntimeConfig.faults`.
   - Exposed as an in-process registry **and** an MCP server (`python -m psa.tools.mcp_server`, stdio).
-- [ ] **D3 Executor** (`src/psa/executor/`)
+- [x] **D3 Executor** (`src/psa/executor/`)
   - Claims the idempotency key (`INSERT … ON CONFLICT`), returns the stored result on duplicates — never a second side effect.
   - Timeouts; bounded retries for `timeout` / `error_5xx` / `rate_limited` only (never `card_declined`); per-tool circuit breaker.
   - Appends `ACTION_EXECUTED` / `ACTION_FAILED` with policy version; `REQUIRE_APPROVAL` → approvals row + `APPROVAL_REQUESTED`; `resolve_approval` executes or rejects.
-- [ ] **D4 Baseline agent** (`src/psa/agent/baseline.py`)
+- [x] **D4 Baseline agent** (`src/psa/agent/baseline.py`)
   - LangGraph; policy rules rendered as text into the system prompt; read **and write** tools callable directly; same event logging as guarded so metrics compare like-for-like.
-- [ ] **D5 Guarded agent** (`src/psa/agent/guarded.py`)
+- [x] **D5 Guarded agent** (`src/psa/agent/guarded.py`)
   - LangGraph; read tools + `propose_action` only. Proposal → `psa.policy.decide()` → executor / approval queue / verification request; the decision (rule IDs, customer-safe messages) is returned to the model to relay.
   - Step limit (`max_agent_steps`); untrusted text never reaches the policy engine.
-- [ ] **D6 Runtime factory** (`src/psa/runtime/factory.py`)
+- [x] **D6 Runtime factory** (`src/psa/runtime/factory.py`)
   - `build_runtime(config, *, sessions, clock) -> AgentRuntime` for both systems; `set_policy_version`; conversation + session state persisted in `conversations`.
   - `uv run python -m psa.runtime.demo` — one scripted conversation against Postgres, prints the event log.
-- [ ] **D7 User simulator** (`evals/simulator/`)
+- [x] **D7 User simulator** (`evals/simulator/`)
   - `LLMUserSimulator` implementing `UserSimulator`: plays persona/honesty/hidden goal, never reveals it's simulated, ends with a stop signal, temperature 0 where supported.
-- [ ] **D8 Tests**
+- [x] **D8 Tests**
   - `ScriptedLLM` end-to-end for both agents (no network): in-window refund executes exactly once; out-of-window → guarded DENY while baseline's execution is recorded; duplicate refund → one Stripe call; card decline → `ACTION_FAILED`, no retry; timeout → retried; injected note text never changes a decision; live key refused; approval → execute on approve.
   - `@pytest.mark.llm` smoke tests against a real provider (skipped without `LLM_API_KEY`).
 - **Acceptance:** gate green incl. Postgres; demo command works; ≥90% coverage on `executor/` and `tools/`.

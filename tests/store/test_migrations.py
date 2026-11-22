@@ -20,6 +20,7 @@ EXPECTED_TABLES = {
     "events",
     "follow_ups",
     "idempotency_keys",
+    "llm_transcripts",
     "order_items",
     "orders",
     "refunds",

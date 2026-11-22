@@ -10,9 +10,9 @@ from psa.domain import DecisionOutcome as D
 from psa.domain import ItemCategory, OrderStatus, ReasonCode
 from tests.policy.helpers import (
     ALICE,
-    ORDER,
     BOB,
     NOW,
+    ORDER,
     cancel,
     escalate,
     follow_up,
