@@ -155,10 +155,10 @@ def test_gift_card_not_refundable() -> None:
     assert decision.reason_codes == (ReasonCode.GIFT_CARD_NOT_REFUNDABLE,)
 
 
-def test_refund_naming_sku_not_in_order_fails_closed() -> None:
+def test_refund_naming_sku_not_in_order_denied() -> None:
     decision = run(refund(100, skus=("LG-NOPE-000",)), order())
     assert decision.outcome is D.DENY
-    assert ReasonCode.MISSING_FACT in decision.reason_codes
+    assert decision.reason_codes == (ReasonCode.ITEM_NOT_IN_ORDER,)  # no MISSING_FACT noise
 
 
 # ------------------------------------------------------------------ identity & ownership
@@ -289,6 +289,17 @@ def test_follow_up_on_own_order_allowed() -> None:
 
 def test_follow_up_on_unknown_order_denied() -> None:
     assert run(follow_up("ord_missing1")).reason_codes == (ReasonCode.ORDER_NOT_FOUND,)
+
+
+@pytest.mark.parametrize(
+    ("hours", "expected"),
+    [(0, D.DENY), (1, D.ALLOW), (336, D.ALLOW), (337, D.DENY), (-5, D.DENY)],
+)
+def test_follow_up_window_boundary(hours: int, expected: D) -> None:
+    decision = run(follow_up(hours=hours), order())
+    assert decision.outcome is expected
+    if expected is D.DENY:
+        assert decision.reason_codes == (ReasonCode.FOLLOW_UP_OUT_OF_RANGE,)
 
 
 # ------------------------------------------------------------------ audit trail

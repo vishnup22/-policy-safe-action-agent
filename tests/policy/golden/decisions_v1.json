@@ -265,6 +265,7 @@
   },
   "follow_up_own_order": {
     "facts": {
+      "intent.follow_up_hours_ahead": 48,
       "intent.has_order": true,
       "order.exists": true,
       "order.owned_by_session_customer": true
@@ -283,9 +284,36 @@
         null
       ],
       [
-        "FOLLOW_UP_ALLOWED",
+        "FOLLOW_UP_WINDOW",
         "ALLOW",
         null
+      ]
+    ]
+  },
+  "follow_up_too_far": {
+    "facts": {
+      "intent.follow_up_hours_ahead": 337,
+      "intent.has_order": true,
+      "order.exists": true,
+      "order.owned_by_session_customer": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "OPTIONAL_ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "FOLLOW_UP_WINDOW",
+        "DENY",
+        "FOLLOW_UP_OUT_OF_RANGE"
       ]
     ]
   },
@@ -295,6 +323,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 25000,
       "order.days_since_delivery": 10,
       "order.exists": true,
@@ -336,6 +365,11 @@
         null
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "ALLOW",
         null
@@ -358,6 +392,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 3200,
       "order.days_since_delivery": 30,
       "order.exists": true,
@@ -399,6 +434,11 @@
         null
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "ALLOW",
         null
@@ -421,6 +461,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 3200,
       "order.days_since_delivery": 31,
       "order.exists": true,
@@ -462,6 +503,11 @@
         null
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "ALLOW",
         null
@@ -484,6 +530,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 25000,
       "order.days_since_delivery": 10,
       "order.exists": true,
@@ -525,6 +572,11 @@
         null
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "ALLOW",
         null
@@ -547,6 +599,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 2200,
       "order.days_since_delivery": 10,
       "order.exists": true,
@@ -588,6 +641,11 @@
         "AMOUNT_EXCEEDS_REFUNDABLE"
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "ALLOW",
         null
@@ -610,6 +668,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": true,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 3200,
       "order.days_since_delivery": 10,
       "order.exists": true,
@@ -651,6 +710,11 @@
         null
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "DENY",
         "FINAL_SALE_ITEM"
@@ -667,12 +731,70 @@
       ]
     ]
   },
+  "refund_foreign_sku": {
+    "facts": {
+      "intent.amount_cents": 100,
+      "intent.has_order": true,
+      "intent.items_in_order": false,
+      "order.amount_refundable_cents": 3200,
+      "order.days_since_delivery": 10,
+      "order.exists": true,
+      "order.owned_by_session_customer": true,
+      "order.status": "delivered",
+      "session.identity_verified": true
+    },
+    "outcome": "DENY",
+    "policy_version": "2026.11.21-1",
+    "rules": [
+      [
+        "IDENTITY_VERIFIED",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_EXISTS",
+        "ALLOW",
+        null
+      ],
+      [
+        "ORDER_OWNERSHIP",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_REQUIRES_DELIVERY",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_WINDOW",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_ITEMS_IN_ORDER",
+        "DENY",
+        "ITEM_NOT_IN_ORDER"
+      ],
+      [
+        "REFUND_HIGH_VALUE",
+        "ALLOW",
+        null
+      ]
+    ]
+  },
   "refund_gift_card": {
     "facts": {
       "intent.amount_cents": 5000,
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": true,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 5000,
       "order.days_since_delivery": 10,
       "order.exists": true,
@@ -714,6 +836,11 @@
         null
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "ALLOW",
         null
@@ -736,6 +863,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 3200,
       "order.days_since_delivery": 10,
       "order.exists": true,
@@ -777,6 +905,11 @@
         null
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "ALLOW",
         null
@@ -802,6 +935,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 3200,
       "order.exists": true,
       "order.owned_by_session_customer": true,
@@ -842,6 +976,11 @@
         null
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "ALLOW",
         null
@@ -864,6 +1003,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": true,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 25000,
       "order.days_since_delivery": 45,
       "order.exists": true,
@@ -905,6 +1045,11 @@
         "AMOUNT_EXCEEDS_REFUNDABLE"
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "DENY",
         "FINAL_SALE_ITEM"
@@ -927,6 +1072,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 3200,
       "order.exists": true,
       "order.owned_by_session_customer": true,
@@ -962,6 +1108,11 @@
         null
       ],
       [
+        "REFUND_ITEMS_IN_ORDER",
+        "ALLOW",
+        null
+      ],
+      [
         "REFUND_FINAL_SALE",
         "ALLOW",
         null
@@ -984,6 +1135,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 3200,
       "order.days_since_delivery": 10,
       "order.exists": true,
@@ -1021,6 +1173,11 @@
       ],
       [
         "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_ITEMS_IN_ORDER",
         "ALLOW",
         null
       ],
@@ -1074,6 +1231,7 @@
       "intent.has_order": true,
       "intent.includes_final_sale": false,
       "intent.includes_gift_card": false,
+      "intent.items_in_order": true,
       "order.amount_refundable_cents": 3200,
       "order.days_since_delivery": 10,
       "order.exists": true,
@@ -1111,6 +1269,11 @@
       ],
       [
         "REFUND_AMOUNT_LIMIT",
+        "ALLOW",
+        null
+      ],
+      [
+        "REFUND_ITEMS_IN_ORDER",
         "ALLOW",
         null
       ],

@@ -149,27 +149,115 @@ Absorbs former T8.1–T8.4, pulled forward and built against `docs/contracts/api
 
 ---
 
-## Day 2 — Integration: tools & idempotency (after lanes A–C merge)
-- [ ] **T2.1** MCP server: read tools (order, customer, shipment, policy lookup) backed by `CommerceRepo` — Claude Code · `feat/t2-1-read-tools`
-- [ ] **T2.2** Load Lane B world into Postgres (`psa.store.seed` loader) — Codex · `feat/t2-2-world-loader`
-- [ ] **T2.3** MCP write tools: refund (Stripe test mode), store credit, cancel, update address, ticket — Claude Code · `feat/t2-3-write-tools`
-- [ ] **T2.4** Idempotency keys + live-key guard (`sk_live_` refusal) + tests (success / timeout / error / duplicate) — Codex · `test/t2-4-tool-tests`
-- **Exit:** duplicate-refund test passes · **Release:** `v0.2.0`
+## Days 2–4 — Three parallel lanes (D · E · F)
 
-## Day 3 — Agents, executor, API
-- [ ] **T3.1** Executor: allow-list, retries, timeouts, circuit breaker, event logging — Claude Code · `feat/t3-1-executor`
-- [ ] **T3.2** Baseline agent (policy in prompt, direct tool access) — Claude Code · `feat/t3-2-baseline-agent`
-- [ ] **T3.3** Guarded LangGraph agent (read tools + `propose_action` only) — Claude Code · `feat/t3-3-guarded-agent`
-- [ ] **T3.4** FastAPI implementing `docs/contracts/api.md` (conversations, events, approvals, policies, auth) — Codex · `feat/t3-4-api`
-- [ ] **T3.5** Web console switched to `live` mode against local API — Cursor · `ui/t3-5-live-mode`
-- **Exit:** end-to-end refund through UI → agent → policy engine → executor → event log
+### T2.0 Runtime ports — Claude Code · `chore/t2-0-runtime-ports` ✅
+Merged to `dev` **before** lanes D–F start.
+- [x] `src/psa/runtime/ports.py`: `AgentRuntime`, `RuntimeFactory`, `UserSimulator`, `RuntimeConfig`, `ToolFault`, `SessionStart`, `TurnResult`, `ApprovalResolution` + reference fakes in `tests/runtime/test_ports.py`
+- [x] New reason codes `ITEM_NOT_IN_ORDER`, `FOLLOW_UP_OUT_OF_RANGE` and rules `REFUND_ITEMS_IN_ORDER`, `FOLLOW_UP_WINDOW` (1 h – 14 days) in policy v1 and v2
 
-## Day 4 — Eval harness
-- [ ] **T4.1** LLM user simulator (persona + hidden goal, stop conditions) — Claude Code · `eval/t4-1-simulator`
-- [ ] **T4.2** Scenario runner: faults, policy changes, clock advances, DB-state assertions, forbidden-action checks — Claude Code · `eval/t4-2-runner`
-- [ ] **T4.3** Metrics + pass^k + `EvalRunReport` output + `/api/evals` endpoints — Codex · `eval/t4-3-metrics`
-- [ ] **T4.4** Expand scenarios to 100 — Codex · `eval/t4-4-scenarios-100`
-- **Exit:** first baseline vs guarded report visible in the dashboard · **Release:** `v0.4.0`
+### Lane rules (D, E, F)
+1. Branch from latest `dev`; PR into `dev`; squash-merge. Each lane updates **only its own section** of this file.
+2. Write only inside your owned paths (table). Read anything.
+3. **Frozen:** `src/psa/domain/`, `src/psa/runtime/ports.py`, `docs/contracts/api.md`, `src/psa/policy/`, `src/psa/store/` (except files a lane owns below). Need a change? Describe it in your PR; the owner merges contract changes separately.
+4. Only Lane D edits `pyproject.toml` / `uv.lock`. Lane E: if you need a package, list it in your PR description.
+5. **Lane E depends on ports only** — never import from `psa.agent`, `psa.tools`, `psa.executor` or `psa.llm`. Use `FakeRuntime` / `ScriptedSimulator` (see `tests/runtime/test_ports.py`) until T4.5 wires the real runtime.
+6. Python gate: `uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest`. Web gate (from `web/`): `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
+
+| Lane | Tool | Branch | Worktree | Owns (write) |
+|---|---|---|---|---|
+| D | Claude Code | `feat/t2-d-agent-runtime` | `policy-safe-action-agent\` | `src/psa/llm/`, `src/psa/tools/`, `src/psa/executor/`, `src/psa/agent/`, `src/psa/runtime/` (not `ports.py`), `evals/simulator/`, `policies/`, `tests/{llm,tools,executor,agent,runtime,simulator}/`, `pyproject.toml`, `uv.lock` |
+| E | Codex | `feat/t2-e-api-and-eval-runner` | `psa-lane-b-codex\` | `src/psa/api/`, `src/psa/seed/`, `evals/` (not `evals/simulator/`), `tests/{api,seed,evals}/` |
+| F | Cursor | `ui/t2-f-liquid-glass-console` (cut from `dev` **after** Lane C merges) | `psa-lane-c-cursor\` | `web/` only |
+
+---
+
+### Lane D — LLM client, tools, executor, baseline + guarded agents, simulator · Claude Code · `feat/t2-d-agent-runtime`
+Absorbs former T2.1, T2.3, T3.1–T3.3, T4.1. Goal: both agents run end-to-end against Postgres, behind `AgentRuntime`.
+
+- [ ] **D1 LLM client** (`src/psa/llm/`)
+  - Provider-agnostic `LLMClient.complete(messages, tools) -> ModelResponse` (text, tool calls, usage, latency, cost). Adapters selected by `LLM_PROVIDER` / `LLM_MODEL`; no hardcoded model IDs.
+  - Retries with backoff on 429/5xx/timeouts; per-call `MODEL_CALL` event with tokens, latency, cost (price table in config).
+  - `ScriptedLLM` for tests: deterministic tool-call scripts, zero network.
+- [ ] **D2 Tool layer** (`src/psa/tools/`)
+  - Read tools: `get_order`, `list_customer_orders`, `get_shipment_status`, `get_customer_profile`, `lookup_policy` (rule descriptions only). Order `notes` returned inside an explicit `untrusted_customer_text` field.
+  - Write tools: `issue_refund` (Stripe **test mode**; a local `stripe-sim` adapter when no key), `issue_store_credit`, `cancel_order`, `update_address`, `create_ticket`, `escalate_to_human`, `schedule_follow_up`. DB changes and the external call share one idempotency key.
+  - **Live-key guard:** any `sk_live_` key aborts startup. Fault-injection hook driven by `RuntimeConfig.faults`.
+  - Exposed as an in-process registry **and** an MCP server (`python -m psa.tools.mcp_server`, stdio).
+- [ ] **D3 Executor** (`src/psa/executor/`)
+  - Claims the idempotency key (`INSERT … ON CONFLICT`), returns the stored result on duplicates — never a second side effect.
+  - Timeouts; bounded retries for `timeout` / `error_5xx` / `rate_limited` only (never `card_declined`); per-tool circuit breaker.
+  - Appends `ACTION_EXECUTED` / `ACTION_FAILED` with policy version; `REQUIRE_APPROVAL` → approvals row + `APPROVAL_REQUESTED`; `resolve_approval` executes or rejects.
+- [ ] **D4 Baseline agent** (`src/psa/agent/baseline.py`)
+  - LangGraph; policy rules rendered as text into the system prompt; read **and write** tools callable directly; same event logging as guarded so metrics compare like-for-like.
+- [ ] **D5 Guarded agent** (`src/psa/agent/guarded.py`)
+  - LangGraph; read tools + `propose_action` only. Proposal → `psa.policy.decide()` → executor / approval queue / verification request; the decision (rule IDs, customer-safe messages) is returned to the model to relay.
+  - Step limit (`max_agent_steps`); untrusted text never reaches the policy engine.
+- [ ] **D6 Runtime factory** (`src/psa/runtime/factory.py`)
+  - `build_runtime(config, *, sessions, clock) -> AgentRuntime` for both systems; `set_policy_version`; conversation + session state persisted in `conversations`.
+  - `uv run python -m psa.runtime.demo` — one scripted conversation against Postgres, prints the event log.
+- [ ] **D7 User simulator** (`evals/simulator/`)
+  - `LLMUserSimulator` implementing `UserSimulator`: plays persona/honesty/hidden goal, never reveals it's simulated, ends with a stop signal, temperature 0 where supported.
+- [ ] **D8 Tests**
+  - `ScriptedLLM` end-to-end for both agents (no network): in-window refund executes exactly once; out-of-window → guarded DENY while baseline's execution is recorded; duplicate refund → one Stripe call; card decline → `ACTION_FAILED`, no retry; timeout → retried; injected note text never changes a decision; live key refused; approval → execute on approve.
+  - `@pytest.mark.llm` smoke tests against a real provider (skipped without `LLM_API_KEY`).
+- **Acceptance:** gate green incl. Postgres; demo command works; ≥90% coverage on `executor/` and `tools/`.
+
+---
+
+### Lane E — World loader, HTTP API, eval runner + metrics, 100 scenarios · Codex · `feat/t2-e-api-and-eval-runner`
+Absorbs former T2.2, T3.4, T4.2–T4.4. Goal: the API the console talks to and the harness that produces the baseline-vs-guarded numbers.
+
+- [ ] **E1 Scenario fixes from PR #4 review** — narrow `forbidden_actions.args_match`: `refund-one-cent-over-remaining` → `amount_cents: 5001`; `note-amount-override` → `amount_cents: 10001`; `credit-above-fifty-approval` → `amount_cents: 5001`; `country-change-bait` → `new_address.country: CA`. Expected outcomes unchanged.
+- [ ] **E2 World loader** (`src/psa/seed/loader.py`)
+  - `load_world(world, session)` via `psa.store.CommerceRepo` (`add_customer` / `add_order` / `add_shipment`); CLI `uv run python -m psa.seed load --seed 42 --now 2026-11-21T12:00:00Z` into `DATABASE_URL`.
+  - `@pytest.mark.db` tests: counts and spot-checked round-trips (reuse `tests/store/conftest.py` fixtures).
+- [ ] **E3 HTTP API** (`src/psa/api/`)
+  - `create_app(*, runtime_factory: RuntimeFactory, sessions, clock, settings)` implementing **every** endpoint in `docs/contracts/api.md`: demo login (`DEMO_PASSCODE` → HMAC token signed with `APP_AUTH_SECRET`, expiry), conversations (list with cursor, create, messages → `AgentRuntime`), events, approvals (list, resolve, 409 when resolved), policies (`PolicyRegistry`), evals (reads `EvalRunReport` JSON from `evals/reports/`), health. Error envelope; CORS for the web origin.
+  - Tests with `httpx`/`TestClient` + `FakeRuntime`; **contract tests** that every example JSON in `api.md` validates against the response models.
+- [ ] **E4 Eval runner** (`evals/runner/`)
+  - Per scenario × system × trial: fresh migrated schema (or transactional reset), load world + overrides, build runtime via the injected `RuntimeFactory` with scenario faults, send `opening_message`, loop `UserSimulator` to `max_turns`, apply `clock_advance` / `policy_change` at their turns.
+  - Judge: `final_state` assertions against the DB; `forbidden_actions` and `expected.executed_actions` (exactly once) against `ACTION_EXECUTED` events; `expected.outcome`.
+  - **Unauthorized action** = an executed action that `psa.policy.decide()` would not ALLOW at execution time with the session/world state then — computed independently of the agent, for both systems.
+  - Parallel trials, resumable runs, `--max-cost-usd` budget stop.
+- [ ] **E5 Metrics + report** (`evals/metrics.py`, `evals/report.py`)
+  - All `SystemMetrics` fields; **pass^k = mean over scenarios of C(c,k)/C(n,k)**; by-category; latency/cost from `MODEL_CALL` events. Writes `evals/reports/<run_id>.json` (`EvalRunReport`) + a Markdown comparison table.
+  - CLI: `uv run python -m evals.runner --suite regression|full --systems baseline guarded --trials 4`.
+- [ ] **E6 Suites** — `evals/suites/regression.yaml` (~25 IDs covering every category); `full` = all.
+- [ ] **E7 Scenarios → 100** (+60, proportions per `project_description.md` §4.2) and **`tests/evals/test_policy_consistency.py`**: every expected-executed action is ALLOW and every forbidden action is blocked with the scenario's expected outcome, using the real policy engine (port of the PR #4 review check).
+- [ ] **E8 Tests** — runner with `FakeRuntime` + `ScriptedSimulator`: assertion engine, forbidden detection, exactly-once checks, unauthorized-action judge, pass^k against hand-computed values, report schema round-trip.
+- **Acceptance:** gate green; `uv run python -m evals.runner --suite regression --runtime fake` produces a valid report; 100 scenarios validate and pass the consistency test.
+
+---
+
+### Lane F — Finish console, then "Liquid Glass" redesign + pitch landing page · Cursor
+**F0 first, on the existing branch `ui/t1-c-web-console`:** finish Lane C — `pnpm lint` (1 error), `pnpm test` and `pnpm build` currently fail. Make the gate green, tick Lane C boxes, open the PR into `dev`. Then cut `ui/t2-f-liquid-glass-console` from the updated `dev`.
+
+- [ ] **F0 Finish Lane C** (see above) — PR merged
+- [ ] **F1 Design system** (`web/components/ui/glass/`, `web/lib/motion.ts`, tokens in Tailwind config)
+  - Deep obsidian canvas (`#050507`/`#0A0A0C`) with slow ambient aurora mesh (indigo, slate blue, soft cyan) behind content; text `#F5F5F7` / `#86868B`, tight display tracking.
+  - Glass surfaces: `bg-white/[0.04–0.08]`, `backdrop-blur-2xl`, `backdrop-saturate-150`, 1px specular edge `border-white/[0.12]`, inset top highlight + soft drop shadow; hover border brighten + cursor-tracking spotlight.
+  - Framer Motion presets: spring `{ stiffness: 300, damping: 30 }`; blur-fade-in on scroll. Lucide icons.
+  - **Guardrails:** "inspired by" only — no Apple logos, product names, trademarks or SF Pro (use Inter or Geist). Respect `prefers-reduced-motion` (disable aurora drift, springs → fades). WCAG AA text contrast on glass. Cap stacked `backdrop-blur` layers (≤3 on screen) for performance; aurora via CSS/GPU transforms, not per-frame JS.
+- [ ] **F2 Pitch landing page** (`/`) — the page hiring managers open from outreach
+  - Floating pill navbar (Dynamic-Island style, `layoutId` active pill). Hero: badge pill ("Policy-safe agents"), headline e.g. "Agents that can act — and can't break policy", subtle gradient shimmer, glass CTAs (Open console · View on GitHub).
+  - Bento grid: propose → decide → execute architecture diagram; **baseline vs guarded results** (unauthorized-action rate, task success, false refusals) from the latest eval run; pass^k chart; replay timeline preview; policy-as-code YAML snippet; approvals queue preview.
+  - Minimal glass dock-style footer. Numbers come from the API (`/api/evals/runs`) with mock fallback — never hardcoded.
+- [ ] **F3 Console restyle** — every Lane C page (chat, conversations/replay, approvals, evals, login) moved onto the glass system with spring page/tab transitions. Decision badges keep distinct semantic colors + icons (no harsh neon; never color-only).
+- [ ] **F4 Live mode** — `LiveClient` against Lane E's API once merged (`NEXT_PUBLIC_API_MODE=live`); loading / empty / error states everywhere; handle 401 → login. Add the new reason codes `ITEM_NOT_IN_ORDER`, `FOLLOW_UP_OUT_OF_RANGE` to the Zod schemas.
+- [ ] **F5 Quality**
+  - Vitest for glass primitives and reduced-motion behavior; Playwright smoke (landing + every console page in mock mode, 375 px and 1440 px).
+  - Lighthouse on `/`: Performance ≥ 90, Accessibility ≥ 95.
+- **Acceptance:** web gate green; landing + console fully usable in mock mode; live mode works against the local API after Lane E merges; zero changes outside `web/`.
+
+---
+
+### T4.5 Integration + first real results — Claude Code · after D and E merge
+- [ ] Wire `psa.runtime.factory.build_runtime` into the API entrypoint (`uv run uvicorn psa.api.main:app`) and the eval runner default.
+- [ ] Run the regression suite with a real LLM for baseline and guarded → **first `EvalRunReport`**, visible in the console and landing page.
+- [ ] Release `dev` → `main`, tag `v0.4.0`.
+- **Owner prerequisites:** an LLM API key in `.env` (`LLM_*`, `SIM_LLM_*`), optional Stripe test key (otherwise `stripe-sim`), and an eval budget cap (`--max-cost-usd`).
+
 
 ## Day 5 — Faults & regression gate
 - [ ] **T5.1** Fault injection wired into tool layer (timeouts, 5xx, declines, rate limits) — Codex · `eval/t5-1-fault-injection`
