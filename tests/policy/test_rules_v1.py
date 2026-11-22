@@ -12,6 +12,7 @@ from tests.policy.helpers import (
     ALICE,
     BOB,
     NOW,
+    ORDER,
     cancel,
     escalate,
     follow_up,
@@ -181,10 +182,24 @@ def test_someone_elses_order_denied() -> None:
     assert decision.reason_codes == (ReasonCode.ORDER_NOT_OWNED_BY_CUSTOMER,)
 
 
-def test_anonymous_session_cannot_refund() -> None:
+def test_anonymous_session_is_asked_to_verify_not_refused() -> None:
+    """A visitor who hasn't identified yet must be asked to verify, never refunded."""
     decision = run(refund(), order(), sess=session(verified=False, customer_id=None))
-    assert decision.outcome is D.DENY
-    assert ReasonCode.ORDER_NOT_OWNED_BY_CUSTOMER in decision.reason_codes
+    assert decision.outcome is D.REQUIRE_VERIFICATION
+    assert decision.reason_codes == (ReasonCode.IDENTITY_NOT_VERIFIED,)
+    assert "ORDER_OWNERSHIP" not in rule_outcomes(decision)
+
+
+@pytest.mark.parametrize("make", [cancel, update_address])
+def test_anonymous_order_changes_ask_for_verification(make) -> None:  # type: ignore[no-untyped-def]
+    o = order(status=OrderStatus.PAID, delivered_ago=None)
+    decision = run(make(), o, sess=session(verified=False, customer_id=None))
+    assert decision.outcome is D.REQUIRE_VERIFICATION
+
+
+def test_anonymous_ticket_about_an_order_is_denied() -> None:
+    decision = run(ticket(ORDER), order(), sess=session(verified=False, customer_id=None))
+    assert decision.reason_codes == (ReasonCode.ORDER_NOT_OWNED_BY_CUSTOMER,)
 
 
 def test_unknown_order_denied_without_noise() -> None:
@@ -216,6 +231,16 @@ def test_store_credit_rolling_cap(amount: int, expected: D) -> None:
 def test_store_credit_outside_window_not_counted() -> None:
     credits = [(ALICE, NOW - 31 * DAY, 15000), (BOB, NOW - DAY, 15000)]
     assert run(store_credit(5000), credits=credits).outcome is D.ALLOW
+
+
+def test_store_credit_to_another_customers_account_denied() -> None:
+    from psa.domain import IssueStoreCreditArgs
+    from tests.policy.helpers import intent
+
+    other = intent(IssueStoreCreditArgs(customer_id=BOB, amount_cents=1000, reason="r"))
+    decision = run(other)
+    assert decision.outcome is D.DENY
+    assert decision.reason_codes == (ReasonCode.ORDER_NOT_OWNED_BY_CUSTOMER,)
 
 
 def test_store_credit_for_someone_elses_order_denied() -> None:

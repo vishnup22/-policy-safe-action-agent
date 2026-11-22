@@ -250,6 +250,24 @@ class ApprovalRow(Base):
     note: Mapped[str | None] = mapped_column(Text)
 
 
+class LLMTranscriptRow(Base):
+    """The model's native conversation (incl. thinking blocks), appended each turn.
+
+    Kept separate from `events` because providers require assistant turns to be resent
+    unchanged; events stay provider-neutral and are the audit record.
+    """
+
+    __tablename__ = "llm_transcripts"
+
+    conversation_id: Mapped[str] = mapped_column(
+        ForeignKey("conversations.conversation_id"), primary_key=True
+    )
+    provider: Mapped[str] = mapped_column(String(64))
+    model: Mapped[str] = mapped_column(String(128))
+    messages: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    updated_at: Mapped[datetime] = mapped_column(TS)
+
+
 class FollowUpRow(Base):
     __tablename__ = "follow_ups"
     __table_args__ = (Index("ix_follow_ups_status_due", "status", "due_at"),)

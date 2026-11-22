@@ -49,9 +49,24 @@ rules:
       message: I couldn't find that order.
 
   - id: ORDER_OWNERSHIP
-    description: Customers can only act on their own orders
-    applies_to:
-      [issue_refund, issue_store_credit, cancel_order, update_address, create_ticket, schedule_follow_up]
+    description: Customers can only change or get money back on their own orders
+    applies_to: [issue_refund, issue_store_credit, cancel_order, update_address]
+    # Skipped while the session has no customer: IDENTITY_VERIFIED then asks the visitor to
+    # verify (REQUIRE_VERIFICATION) instead of refusing outright. Never yields ALLOW on its own.
+    only_if:
+      all:
+        - { fact: intent.has_order, op: eq, value: true }
+        - { fact: order.exists, op: eq, value: true }
+        - { fact: session.has_customer, op: eq, value: true }
+    when: { fact: order.owned_by_session_customer, op: eq, value: true }
+    else:
+      decision: DENY
+      reason: ORDER_NOT_OWNED_BY_CUSTOMER
+      message: That order isn't associated with your account.
+
+  - id: REFERENCED_ORDER_OWNERSHIP
+    description: Tickets and follow-ups can only reference the customer's own orders
+    applies_to: [create_ticket, schedule_follow_up]
     only_if:
       all:
         - { fact: intent.has_order, op: eq, value: true }
@@ -144,6 +159,16 @@ rules:
       message: Refunds over $200 are reviewed by a team member; I've sent this for approval.
 
   # ---------------------------------------------------------------- store credit
+  - id: STORE_CREDIT_OWN_ACCOUNT
+    description: Store credit can only be issued to the session customer's own account
+    applies_to: [issue_store_credit]
+    only_if: { fact: session.has_customer, op: eq, value: true }
+    when: { fact: intent.targets_session_customer, op: eq, value: true }
+    else:
+      decision: DENY
+      reason: ORDER_NOT_OWNED_BY_CUSTOMER
+      message: Store credit can only be added to your own account.
+
   - id: STORE_CREDIT_SINGLE_LIMIT
     description: Store credit over $50.00 needs human approval
     applies_to: [issue_store_credit]
