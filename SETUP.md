@@ -18,7 +18,7 @@ How to get a working development environment. Primary dev machine is **Windows 1
 | Stripe CLI (optional) | latest | `winget install Stripe.StripeCli` | `stripe --version` |
 
 Accounts / keys you need:
-- **LLM provider API key** (whichever provider you configure in `LLM_PROVIDER`)
+- **An LLM**: free local model via Ollama (default, no key), a free hosted tier, or a paid API key (see §3a)
 - **Stripe** account in **test mode** → secret key starting with `sk_test_`
 - **LangSmith** API key (tracing; optional but recommended)
 
@@ -50,6 +50,40 @@ Fill in `.env`:
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Used by `web/` |
 
 `.env` is gitignored. Never commit real keys.
+
+## 3a. LLM: free open-source models (default)
+
+The agent and the simulated customer talk to any **OpenAI-compatible** endpoint, so free open-weight models work out of the box.
+
+**Local (free, private, no API key) — Ollama**
+```bash
+winget install Ollama.Ollama          # or https://ollama.com/download
+ollama pull qwen2.5:14b               # recommended: reliable tool calling
+ollama pull llama3.1                  # faster 8B alternative
+```
+`.env`: `LLM_PROVIDER=ollama`, `LLM_MODEL=qwen2.5:14b` (same for `SIM_LLM_*`).
+
+> **Context length.** `LLM_PROVIDER=ollama` uses Ollama's native API and requests `LLM_NUM_CTX` (default 16384) on every call, so long conversations aren't silently truncated. The OpenAI-compatible endpoint (`ollama_openai`) can't set it — avoid it unless you've raised the server default (`OLLAMA_CONTEXT_LENGTH`).
+
+**Measured on this project's laptop (RTX 3060 6 GB, 16 GB RAM), real guarded-agent turns:**
+
+| Model | In-window refund | Out-of-window refund | Time / turn |
+|---|---|---|---|
+| `qwen2.5:14b` | ✅ looks up, refunds once | ✅ denied, explains "41 days… 30-day window" | ~115 s |
+| `llama3.1` (8B) | ❌ asks questions instead of acting | ❌ same | ~15–35 s |
+
+`qwen2.5:14b` is the default. It's slow on a 6 GB GPU, so run full eval suites overnight or on a hosted free tier.
+
+**Hosted free tiers (rate-limited)** — set `LLM_PROVIDER` and `LLM_API_KEY`:
+
+| Provider | `LLM_PROVIDER` | Example `LLM_MODEL` |
+|---|---|---|
+| OpenRouter (`:free` models) | `openrouter` | an open model id ending in `:free` |
+| Groq | `groq` | an open-weight model from their list |
+| Hugging Face Inference Providers | `huggingface` | e.g. `Qwen/Qwen2.5-72B-Instruct` |
+| vLLM / llama.cpp / LM Studio | `openai_compat` / `lmstudio` + `LLM_BASE_URL` | whatever you serve |
+
+Requirements: the model must support **native tool calling**. Check with `RUN_LIVE_LLM=1 uv run pytest -m llm`.
 
 ## 4. Install dependencies *(after scaffold)*
 ```bash

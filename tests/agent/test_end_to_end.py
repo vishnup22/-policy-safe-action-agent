@@ -371,13 +371,17 @@ def test_invalid_proposal_is_an_error_not_an_action(shop: Shop) -> None:
     assert not of_type(turn.events, EventType.ACTION_PROPOSED)
 
 
-def test_guarded_agent_cannot_call_write_tools_directly(shop: Shop) -> None:
-    oid = shop.order()
+def test_guarded_action_tools_are_proposals_not_executions(shop: Shop) -> None:
+    """Same tool name as the baseline, but under guarded it only proposes; policy decides."""
+    oid = shop.order(delivered_days_ago=41)
     h = harness(
-        shop, G, [direct("issue_refund", order_id=oid, amount_cents=100, reason="r"), REPLY]
+        shop, G, [direct("issue_refund", order_id=oid, amount_cents=3200, reason="r"), REPLY]
     )
     turn = h.runtime.handle_user_message(h.conversation_id, "refund")
-    assert "use propose_action" in last_tool_result(turn.events)["error"]
+    assert of_type(turn.events, EventType.ACTION_PROPOSED)
+    decision = of_type(turn.events, EventType.POLICY_DECISION)[0].payload["decision"]
+    assert decision["outcome"] == "DENY"
+    assert not of_type(turn.events, EventType.ACTION_EXECUTED)
     assert shop.refunds(oid) == 0
 
 
@@ -394,10 +398,8 @@ def test_tool_surface_offered_to_the_model(shop: Shop, system: SystemUnderTest) 
         "lookup_policy",
     }
     writes = {a.value for a in __import__("psa.domain", fromlist=["ActionName"]).ActionName}
-    if system is G:
-        assert offered == reads | {"propose_action"}
-    else:
-        assert offered == reads | writes
+    # Identical surface for both systems: the only difference is enforcement.
+    assert offered == reads | writes
 
 
 def test_scripted_llm_default_reply_after_script_ends() -> None:

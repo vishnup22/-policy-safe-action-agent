@@ -183,7 +183,8 @@ Absorbs former T2.1, T2.3, T3.1–T3.3, T4.1. Goal: both agents run end-to-end a
 - Fault `tool` names = tool names: read tools (`get_order`, …) and action names (`issue_refund`, …).
 - New table `llm_transcripts` (migration `0002`); run `alembic upgrade head` in runner schemas.
 - Policy changes in this lane: anonymous visitors get `REQUIRE_VERIFICATION` (not DENY) for money/order changes; store credit must target the session customer (`STORE_CREDIT_OWN_ACCOUNT`). Golden snapshot updated.
-- Implemented provider: `anthropic` (official SDK, `LLM_FALLBACKS=default` server-side refusal fallbacks, `LLM_EFFORT`). Other providers: implement `psa.llm.LLMClient`.
+- **Default LLM is a free open-weight model:** `LLM_PROVIDER=ollama`, `LLM_MODEL=qwen2.5:14b` (native Ollama API with `num_ctx`). Also supported: any OpenAI-compatible server or free tier (`lmstudio`, `openrouter`, `groq`, `huggingface`, `openai_compat` + `LLM_BASE_URL`) and `anthropic`. Local turns take ~2 min on a 6 GB laptop GPU, so budget eval wall-clock time accordingly.
+- Guarded agent now exposes the **same per-action tool names as the baseline**; under guarded each call is only a proposal decided by policy (generic `propose_action` still accepted, used by the MCP server).
 
 - [x] **D1 LLM client** (`src/psa/llm/`)
   - Provider-agnostic `LLMClient.complete(messages, tools) -> ModelResponse` (text, tool calls, usage, latency, cost). Adapters selected by `LLM_PROVIDER` / `LLM_MODEL`; no hardcoded model IDs.

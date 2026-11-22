@@ -217,49 +217,46 @@ class BaselineAgent(_AgentBase):
 
 @dataclass
 class GuardedAgent(_AgentBase):
-    """Every side effect is a proposal, decided by the policy engine before execution."""
+    """Every side effect is a proposal, decided by the policy engine before execution.
+
+    The model sees the SAME action tools as the baseline (one per action, same schemas), so
+    the only difference between the two systems is enforcement. Each call here creates a
+    proposal; nothing executes unless the policy engine allows it. A generic
+    `propose_action(action, args, justification)` is also accepted (used by the MCP server).
+    """
 
     def system_prompt(self) -> str:
         return prompts.GUARDED
 
     def action_tools(self) -> list[ToolSpec]:
-        lines = [
-            f"- {a.value}: {ACTION_DESCRIPTIONS[a]} args={_json(args_schema(a))}"
-            for a in ActionName
-        ]
         return [
             ToolSpec(
-                name=PROPOSE_ACTION,
-                description=(
-                    "Request an action on the customer's behalf. The store's policy engine "
-                    "decides whether it runs. Actions and their `args` schemas:\n"
-                    + "\n".join(lines)
-                ),
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "action": {"type": "string", "enum": [a.value for a in ActionName]},
-                        "args": {"type": "object", "description": "Arguments for the action"},
-                        "justification": {
-                            "type": "string",
-                            "description": "Why the customer needs this (for the audit log)",
-                        },
-                    },
-                    "required": ["action", "args", "justification"],
-                    "additionalProperties": False,
-                },
+                name=a.value,
+                description=ACTION_DESCRIPTIONS[a] + " Subject to store policy; may be denied, "
+                "need identity verification, or need a team member's approval.",
+                input_schema=args_schema(a),
             )
+            for a in ActionName
         ]
 
     def dispatch_action(self, call: ToolCall) -> dict[str, Any]:
-        if call.name != PROPOSE_ACTION:
-            raise ToolFailure("unknown_tool", f"no tool named {call.name}; use propose_action")
-        raw_args = call.arguments.get("args") or {}
-        action = call.arguments.get("action")
-        if not isinstance(raw_args, dict) or not isinstance(action, str):
-            raise ToolFailure("invalid_input", "propose_action needs `action` and an `args` object")
+        if call.name == PROPOSE_ACTION:
+            raw_args = call.arguments.get("args") or {}
+            action = call.arguments.get("action")
+            justification = str(call.arguments.get("justification", ""))
+            if not isinstance(raw_args, dict) or not isinstance(action, str):
+                raise ToolFailure(
+                    "invalid_input", "propose_action needs `action` and an `args` object"
+                )
+        else:
+            try:
+                action = ActionName(call.name).value
+            except ValueError as exc:
+                raise ToolFailure("unknown_tool", f"no tool named {call.name}") from exc
+            raw_args = {k: v for k, v in call.arguments.items() if k != "justification"}
+            justification = str(call.arguments.get("justification", "")) or "model request"
         args = _ARGS.validate_python({**raw_args, "action": action})
-        intent = self._propose(args, str(call.arguments.get("justification", "")))
+        intent = self._propose(args, justification)
         decision = decide(
             intent, self.policy, session=self.ctx.session, source=self.ctx.repo, clock=self.clock
         )

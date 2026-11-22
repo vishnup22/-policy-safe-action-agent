@@ -10,7 +10,7 @@ Instructions for AI coding agents (Codex, Cursor, Kiro, Claude Code, and others)
 **Policy-Safe Action Agent** is a customer-service agent for a fictional retailer ("Larkspur Goods") that can issue refunds, cancel orders and change addresses but **cannot violate business policy**. The LLM only *proposes* actions; a deterministic, versioned policy engine *decides*; an executor runs approved actions idempotently; every step is written to an append-only event log and can be replayed. Success is measured by evals: baseline agent (policy in prompt) vs guarded agent (this architecture).
 
 ## Architecture invariants — never break
-1. The LLM never calls side-effecting tools directly — only read tools and `propose_action`.
+1. The LLM never calls side-effecting tools directly. Guarded action tools (same names as the baseline's) only create proposals that the policy engine decides.
 2. Policy decisions use facts from the system of record, never claims from the conversation.
 3. Policies are versioned YAML in `policies/` with a closed operator set. No `eval()` / `exec()` / free-form expressions.
 4. Decision precedence: `DENY > REQUIRE_VERIFICATION > REQUIRE_APPROVAL > ALLOW`; decisions return rule IDs + reason codes.
