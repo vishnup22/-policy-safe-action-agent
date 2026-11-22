@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { EmptyState, ErrorState, LoadingState, PageHeader } from "@/components/page";
+import { GlassPanel } from "@/components/ui/glass";
 import { useEvalRuns } from "@/lib/api/queries";
 import { formatDateTime, formatPercent } from "@/lib/utils";
 
@@ -21,18 +22,18 @@ export function EvalRunList() {
       ) : data.items.length === 0 ? (
         <EmptyState>No eval runs yet.</EmptyState>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {data.items.map((r) => (
-            <li key={r.run_id}>
+            <GlassPanel as="li" spotlight key={r.run_id}>
               <Link
                 href={`/evals/${r.run_id}`}
-                className="block rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
+                className="block rounded-3xl p-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-mono text-sm font-medium">{r.run_id}</p>
                     <p className="text-xs text-muted-foreground">
-                      <span className="rounded border px-1 font-medium uppercase">{r.suite}</span> ·{" "}
+                      <span className="rounded-full border px-1.5 font-medium uppercase">{r.suite}</span> ·{" "}
                       {formatDateTime(r.started_at)} UTC · <span className="font-mono">{r.git_sha}</span> · policy{" "}
                       <span className="font-mono">{r.policy_version}</span>
                     </p>
@@ -58,7 +59,7 @@ export function EvalRunList() {
                   </div>
                 </dl>
               </Link>
-            </li>
+            </GlassPanel>
           ))}
         </ul>
       )}

@@ -14,6 +14,7 @@ import { FactsSnapshot, JsonBlock } from "@/components/facts-snapshot";
 import { ErrorState, LoadingState, PageHeader } from "@/components/page";
 import { RuleResultsTable } from "@/components/rule-results-table";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { GlassPanel } from "@/components/ui/glass";
 import type { Event, EventType } from "@/lib/api/types";
 import { useConversationEvents } from "@/lib/api/queries";
 import { ACTION_LABELS, EVENT_LABELS, describeArgs, extractActions, summarizeEvent } from "@/lib/events";
@@ -49,7 +50,7 @@ function EventDetail({ event }: { event: Event }) {
       </div>
 
       {(event.type === "user_message" || event.type === "agent_message") && (
-        <p className="rounded-lg bg-muted px-3 py-2 text-sm">{event.payload.text}</p>
+        <p className="rounded-2xl border border-glass-edge bg-glass-inset px-3.5 py-2.5 text-sm">{event.payload.text}</p>
       )}
 
       {event.type === "action_proposed" && (
@@ -61,7 +62,7 @@ function EventDetail({ event }: { event: Event }) {
           <p className="text-xs text-muted-foreground">
             Idempotency key <code className="font-mono">{event.payload.intent.idempotency_key}</code>
           </p>
-          <p className="rounded-lg border border-dashed px-3 py-2 text-xs">
+          <p className="rounded-xl border border-dashed border-glass-edge px-3 py-2 text-xs">
             <span className="font-medium">Agent justification</span> (never used as a policy fact): “
             {event.payload.intent.justification}”
           </p>
@@ -86,7 +87,7 @@ function EventDetail({ event }: { event: Event }) {
       )}
 
       {event.type === "tool_result" && typeof event.payload.result?.notes === "string" && (
-        <div role="note" className="flex gap-2 rounded-lg border border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:bg-amber-950/40 dark:text-amber-200">
+        <div role="note" className="flex gap-2 rounded-xl border border-amber-600/30 bg-amber-50/80 px-3 py-2 text-xs text-amber-950 dark:border-amber-300/25 dark:bg-amber-400/10 dark:text-amber-100">
           <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
           <div>
             <p className="font-medium">Untrusted customer text in <code>notes</code></p>
@@ -191,7 +192,7 @@ export function ReplayView({ conversationId }: { conversationId: string }) {
       />
 
       <section aria-labelledby="executed-heading" className="mb-5 grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border bg-card p-4">
+        <GlassPanel className="p-5">
           <h2 id="executed-heading" className="mb-2 text-sm font-semibold">Executed actions</h2>
           {executed.length === 0 ? (
             <p className="text-xs text-muted-foreground">No side effects were executed.</p>
@@ -199,7 +200,7 @@ export function ReplayView({ conversationId }: { conversationId: string }) {
             <ul className="space-y-2">
               {executed.map((a) => (
                 <li key={a.intent.intent_id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                  <CircleCheckBig aria-hidden className="size-4 text-emerald-600" />
+                  <CircleCheckBig aria-hidden className="size-4 text-emerald-600 dark:text-emerald-300" />
                   <span className="font-medium">{ACTION_LABELS[a.intent.args.action]}</span>
                   <span className="text-muted-foreground">{describeArgs(a.intent.args)}</span>
                   {a.decisionSeq !== null && (
@@ -216,8 +217,8 @@ export function ReplayView({ conversationId }: { conversationId: string }) {
               ))}
             </ul>
           )}
-        </div>
-        <div className="rounded-xl border bg-card p-4">
+        </GlassPanel>
+        <GlassPanel className="p-5">
           <h2 className="mb-2 text-sm font-semibold">Blocked or pending actions</h2>
           {notExecuted.length === 0 ? (
             <p className="text-xs text-muted-foreground">None.</p>
@@ -241,7 +242,7 @@ export function ReplayView({ conversationId }: { conversationId: string }) {
               ))}
             </ul>
           )}
-        </div>
+        </GlassPanel>
       </section>
 
       <fieldset className="mb-3">
@@ -256,8 +257,8 @@ export function ReplayView({ conversationId }: { conversationId: string }) {
                 aria-pressed={on}
                 onClick={() => toggleType(t)}
                 className={cn(
-                  "rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring",
-                  on ? "border-foreground/30 bg-foreground/5" : "text-muted-foreground line-through opacity-60",
+                  "rounded-full border px-3 py-1 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+                  on ? "border-glass-edge-hover bg-accent text-foreground" : "border-glass-edge text-muted-foreground line-through",
                 )}
               >
                 {EVENT_LABELS[t]}
@@ -272,9 +273,9 @@ export function ReplayView({ conversationId }: { conversationId: string }) {
         </div>
       </fieldset>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section aria-label="Event timeline" className="flex max-h-[70dvh] flex-col rounded-xl border bg-card">
-          <div className="flex items-center justify-between border-b px-3 py-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <GlassPanel as="section" aria-label="Event timeline" className="flex max-h-[70dvh] flex-col overflow-hidden">
+          <div className="flex items-center justify-between border-b px-4 py-2.5">
             <span className="text-xs text-muted-foreground tabular-nums">
               {index + 1} / {visible.length}
             </span>
@@ -287,7 +288,7 @@ export function ReplayView({ conversationId }: { conversationId: string }) {
               </Button>
             </div>
           </div>
-          <ol ref={listRef} className="flex-1 overflow-y-auto p-1.5">
+          <ol ref={listRef} className="flex-1 overflow-y-auto p-2">
             {visible.map((e) => {
               const active = selected?.seq === e.seq;
               return (
@@ -298,8 +299,8 @@ export function ReplayView({ conversationId }: { conversationId: string }) {
                     aria-current={active ? "step" : undefined}
                     onClick={() => setSelectedSeq(e.seq)}
                     className={cn(
-                      "flex w-full items-start gap-2.5 rounded-lg px-2 py-1.5 text-left text-xs hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-ring",
-                      active && "bg-muted",
+                      "flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring",
+                      active && "bg-accent shadow-[inset_0_1px_0_0_var(--glass-highlight)]",
                     )}
                   >
                     <span className="w-7 shrink-0 pt-px text-right font-mono text-muted-foreground tabular-nums">{e.seq}</span>
@@ -319,11 +320,11 @@ export function ReplayView({ conversationId }: { conversationId: string }) {
               );
             })}
           </ol>
-        </section>
+        </GlassPanel>
 
-        <section aria-label="Event detail" aria-live="polite" className="rounded-xl border bg-card p-4">
+        <GlassPanel as="section" aria-label="Event detail" aria-live="polite" className="p-5">
           {selected ? <EventDetail event={selected} /> : <p className="text-sm text-muted-foreground">No events match the filter.</p>}
-        </section>
+        </GlassPanel>
       </div>
     </>
   );

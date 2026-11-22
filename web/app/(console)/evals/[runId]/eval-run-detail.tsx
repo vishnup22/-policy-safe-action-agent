@@ -7,6 +7,7 @@ import { HEADLINE_METRICS, MetricCard } from "@/components/evals/metric-card";
 import { PassHatKChart } from "@/components/evals/pass-hat-k-chart";
 import { ErrorState, LoadingState, PageHeader } from "@/components/page";
 import { buttonVariants } from "@/components/ui/button";
+import { GlassPanel } from "@/components/ui/glass";
 import type { ScenarioCategory, ScenarioResult, TrialResult } from "@/lib/api/types";
 import { useEvalRun } from "@/lib/api/queries";
 import { cn, formatDateTime, formatPercent } from "@/lib/utils";
@@ -24,9 +25,9 @@ function TrialTable({ system, trials }: { system: string; trials: TrialResult[] 
   return (
     <div className="min-w-0">
       <h4 className="mb-1 text-xs font-semibold capitalize">{system}</h4>
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-xl border border-glass-edge bg-glass-inset">
         <table className="w-full text-xs tabular-nums">
-          <thead className="bg-muted/50 text-left text-muted-foreground">
+          <thead className="bg-muted text-left text-muted-foreground">
             <tr>
               <th scope="col" className="px-2 py-1.5 font-medium">Trial</th>
               <th scope="col" className="px-2 py-1.5 font-medium">Result</th>
@@ -113,7 +114,7 @@ export function EvalRunDetail({ runId }: { runId: string }) {
         title={<span className="font-mono">{data.run_id}</span>}
         description={
           <>
-            <span className="rounded border px-1 text-xs font-medium uppercase">{data.suite}</span> ·{" "}
+            <span className="rounded-full border px-1.5 text-xs font-medium uppercase">{data.suite}</span> ·{" "}
             {formatDateTime(data.started_at)}–{formatDateTime(data.finished_at)} UTC · {guarded.scenarios} scenarios ×{" "}
             {guarded.trials_per_scenario} trials · sha <span className="font-mono">{data.git_sha}</span> · policy{" "}
             <span className="font-mono">{data.policy_version}</span> · agent <span className="font-mono">{data.agent_model}</span>
@@ -121,7 +122,7 @@ export function EvalRunDetail({ runId }: { runId: string }) {
         }
       />
 
-      <section aria-label="Headline metrics" className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <section aria-label="Headline metrics" className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {HEADLINE_METRICS.map((def) => (
           <MetricCard key={def.key} def={def} baseline={baseline} guarded={guarded} />
         ))}
@@ -130,7 +131,7 @@ export function EvalRunDetail({ runId }: { runId: string }) {
       <div className="mb-5 grid gap-4 lg:grid-cols-2">
         <PassHatKChart baseline={baseline} guarded={guarded} />
 
-        <section className="rounded-xl border bg-card p-4" aria-labelledby="cat-heading">
+        <GlassPanel as="section" className="p-5" aria-labelledby="cat-heading">
           <h3 id="cat-heading" className="text-sm font-medium">Success by category</h3>
           <p className="mb-2 text-xs text-muted-foreground">
             Injection resistance: baseline {formatPercent(baseline.injection_resistance_rate)} → guarded{" "}
@@ -167,18 +168,18 @@ export function EvalRunDetail({ runId }: { runId: string }) {
               </tbody>
             </table>
           </div>
-        </section>
+        </GlassPanel>
       </div>
 
-      <section aria-labelledby="scenarios-heading" className="rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+      <GlassPanel as="section" aria-labelledby="scenarios-heading" className="overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-3.5">
           <h3 id="scenarios-heading" className="text-sm font-medium">Scenarios</h3>
           <label className="flex items-center gap-2 text-xs">
             <span className="text-muted-foreground">Category</span>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value as ScenarioCategory | "all")}
-              className="rounded-md border bg-background px-2 py-1 capitalize"
+              className="rounded-full border border-glass-edge bg-glass-inset px-3 py-1 capitalize hover:border-glass-edge-hover focus-visible:outline-2 focus-visible:outline-ring [&>option]:bg-background"
             >
               <option value="all">All</option>
               {categories.map((c) => (
@@ -223,7 +224,7 @@ export function EvalRunDetail({ runId }: { runId: string }) {
                       </td>
                     </tr>
                     {expanded && (
-                      <tr id={`trials-${r.id}`} className="bg-muted/20">
+                      <tr id={`trials-${r.id}`} className="bg-muted/50">
                         <td colSpan={5} className="px-4 py-3">
                           <div className="grid gap-3 xl:grid-cols-2">
                             {r.baseline && <TrialTable system="baseline" trials={r.baseline.trials} />}
@@ -238,7 +239,7 @@ export function EvalRunDetail({ runId }: { runId: string }) {
             </tbody>
           </table>
         </div>
-      </section>
+      </GlassPanel>
     </>
   );
 }

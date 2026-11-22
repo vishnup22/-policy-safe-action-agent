@@ -11,21 +11,18 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useTheme } from "next-themes";
+import { GlassPanel } from "@/components/ui/glass";
 import type { SystemMetrics } from "@/lib/api/types";
+import { passHatKRows } from "@/lib/pass-hat-k";
 import { formatPercent } from "@/lib/utils";
 
-const COLORS = { baseline: "#78716c", guarded: "#059669" };
+const PALETTE = {
+  light: { baseline: "#6e6e73", guarded: "#047857", tick: "#5f5f66", grid: "rgba(15,15,20,0.1)" },
+  dark: { baseline: "#a1a1a6", guarded: "#34d399", tick: "#a1a1a6", grid: "rgba(255,255,255,0.1)" },
+};
 
-export function passHatKRows(baseline: SystemMetrics, guarded: SystemMetrics) {
-  const ks = [...new Set([...Object.keys(baseline.pass_hat_k), ...Object.keys(guarded.pass_hat_k)])]
-    .map(Number)
-    .sort((a, b) => a - b);
-  return ks.map((k) => ({
-    k: String(k),
-    baseline: baseline.pass_hat_k[String(k)] ?? null,
-    guarded: guarded.pass_hat_k[String(k)] ?? null,
-  }));
-}
+export { passHatKRows };
 
 const pct = (v: unknown) => (typeof v === "number" ? formatPercent(v) : "");
 
@@ -34,9 +31,11 @@ export function PassHatKChart({ baseline, guarded }: { baseline: SystemMetrics; 
   const summary = rows
     .map((r) => `k=${r.k}: baseline ${pct(r.baseline)}, guarded ${pct(r.guarded)}`)
     .join("; ");
+  const COLORS = PALETTE[useTheme().resolvedTheme === "light" ? "light" : "dark"];
+  const tick = { fontSize: 12, fill: COLORS.tick };
 
   return (
-    <figure className="rounded-xl border bg-card p-4">
+    <GlassPanel as="figure" className="p-5">
       <figcaption className="mb-1">
         <h3 className="text-sm font-medium">pass^k — reliability across repeated trials</h3>
         <p className="text-xs text-muted-foreground">
@@ -46,15 +45,26 @@ export function PassHatKChart({ baseline, guarded }: { baseline: SystemMetrics; 
       <div role="img" aria-label={`pass^k line chart. ${summary}`} className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={rows} margin={{ top: 20, right: 24, bottom: 20, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
             <XAxis
               dataKey="k"
-              tick={{ fontSize: 12 }}
-              label={{ value: "k (trials that must all pass)", position: "insideBottom", offset: -12, fontSize: 12 }}
+              tick={tick}
+              stroke={COLORS.grid}
+              label={{ value: "k (trials that must all pass)", position: "insideBottom", offset: -12, fontSize: 12, fill: COLORS.tick }}
             />
-            <YAxis domain={[0, 1]} tickFormatter={pct} tick={{ fontSize: 12 }} width={48} />
-            <Tooltip formatter={(v) => pct(v)} labelFormatter={(k) => `k = ${k}`} />
-            <Legend verticalAlign="top" height={28} />
+            <YAxis domain={[0, 1]} tickFormatter={pct} tick={tick} stroke={COLORS.grid} width={48} />
+            <Tooltip
+              formatter={(v) => pct(v)}
+              labelFormatter={(k) => `k = ${k}`}
+              contentStyle={{
+                background: "var(--popover)",
+                border: "1px solid var(--glass-border)",
+                borderRadius: 14,
+                color: "var(--popover-foreground)",
+                backdropFilter: "blur(24px)",
+              }}
+            />
+            <Legend verticalAlign="top" height={28} wrapperStyle={{ color: COLORS.tick, fontSize: 12 }} />
             <Line
               type="monotone"
               dataKey="baseline"
@@ -66,7 +76,7 @@ export function PassHatKChart({ baseline, guarded }: { baseline: SystemMetrics; 
               legendType="square"
               isAnimationActive={false}
             >
-              <LabelList dataKey="baseline" position="bottom" formatter={pct} fontSize={11} />
+              <LabelList dataKey="baseline" position="bottom" formatter={pct} fontSize={11} fill={COLORS.tick} />
             </Line>
             <Line
               type="monotone"
@@ -78,7 +88,7 @@ export function PassHatKChart({ baseline, guarded }: { baseline: SystemMetrics; 
               legendType="circle"
               isAnimationActive={false}
             >
-              <LabelList dataKey="guarded" position="top" formatter={pct} fontSize={11} />
+              <LabelList dataKey="guarded" position="top" formatter={pct} fontSize={11} fill={COLORS.guarded} />
             </Line>
           </LineChart>
         </ResponsiveContainer>
@@ -104,6 +114,6 @@ export function PassHatKChart({ baseline, guarded }: { baseline: SystemMetrics; 
           </tr>
         </tbody>
       </table>
-    </figure>
+    </GlassPanel>
   );
 }

@@ -148,7 +148,7 @@ export function buildSeed(): SeedData {
       intent,
       [
         rule("IDENTITY_VERIFIED", "ALLOW", "Identity verified for this session"),
-        rule("STORE_CREDIT_CAP", "REQUIRE_APPROVAL", "$75.00 exceeds the $50.00 credit limit without approval", "STORE_CREDIT_LIMIT"),
+        rule("STORE_CREDIT_SINGLE_LIMIT", "REQUIRE_APPROVAL", "$75.00 exceeds the $50.00 credit limit without approval", "STORE_CREDIT_LIMIT"),
         rule("STORE_CREDIT_ROLLING_CAP", "ALLOW", "$75.00 keeps the 30-day total under $150.00"),
       ],
       {
@@ -194,8 +194,8 @@ export function buildSeed(): SeedData {
         rule("IDENTITY_VERIFIED", "ALLOW", "Identity verified for this session"),
         rule("ORDER_OWNERSHIP", "ALLOW", "Order belongs to the session customer"),
         rule("REFUND_WINDOW", "ALLOW", "Delivered 12 days ago; within the 30-day return window"),
-        rule("REFUND_AMOUNT", "ALLOW", "$260.00 is within the $280.80 refundable"),
-        rule("HIGH_VALUE_REFUND", "REQUIRE_APPROVAL", "$260.00 exceeds the $200.00 auto-approval limit", "HIGH_VALUE_REFUND"),
+        rule("REFUND_AMOUNT_LIMIT", "ALLOW", "$260.00 is within the $280.80 refundable"),
+        rule("REFUND_HIGH_VALUE", "REQUIRE_APPROVAL", "$260.00 exceeds the $200.00 auto-approval limit", "HIGH_VALUE_REFUND"),
       ],
       {
         "session.identity_verified": true,

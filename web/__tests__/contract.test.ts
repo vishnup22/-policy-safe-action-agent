@@ -276,3 +276,24 @@ describe("enum drift against api.md", () => {
     expect(listAfter("`outcome` ∈").sort()).toEqual([...s.DecisionOutcomeSchema.options].sort());
   });
 });
+
+describe("reason code drift against src/psa/domain/decisions.py", () => {
+  const py = readFileSync(path.resolve(import.meta.dirname, "../../src/psa/domain/decisions.py"), "utf8");
+
+  function pythonReasonCodes(): string[] {
+    const body = py.split(/^class ReasonCode\b.*$/m)[1]?.split(/^\S/m)[0];
+    if (!body) throw new Error("class ReasonCode not found");
+    return [...body.matchAll(/^\s+([A-Z_]+)\s*=\s*"([A-Z_]+)"/gm)].map((m) => m[2]);
+  }
+
+  it("ReasonCodeSchema lists exactly the domain reason codes", () => {
+    expect([...s.ReasonCodeSchema.options].sort()).toEqual(pythonReasonCodes().sort());
+  });
+
+  it("accepts the item-membership and follow-up range codes", () => {
+    for (const code of ["ITEM_NOT_IN_ORDER", "FOLLOW_UP_OUT_OF_RANGE"]) {
+      const r = s.RuleResultSchema.safeParse({ rule_id: "R", outcome: "DENY", reason_code: code, message: "m" });
+      expect(r.success, code).toBe(true);
+    }
+  });
+});

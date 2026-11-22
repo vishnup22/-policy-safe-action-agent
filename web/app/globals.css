@@ -7,17 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace;
-  --font-heading: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+  --font-heading: var(--font-geist-sans), ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -46,75 +38,134 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Liquid-glass tokens */
+  --color-canvas: var(--background);
+  --color-ink: var(--foreground);
+  --color-ink-muted: var(--muted-foreground);
+  --color-glass: var(--glass-bg);
+  --color-glass-strong: var(--glass-bg-strong);
+  --color-glass-inset: var(--glass-inset);
+  --color-glass-edge: var(--glass-border);
+  --color-glass-edge-hover: var(--glass-border-hover);
+  --shadow-glass: inset 0 1px 0 0 var(--glass-highlight), 0 8px 32px var(--glass-drop);
+  --shadow-glass-sm: inset 0 1px 0 0 var(--glass-highlight), 0 4px 16px var(--glass-drop);
 }
 
+@theme {
+  --tracking-display: -0.035em;
+  --animate-aurora-a: aurora-a 32s ease-in-out infinite alternate;
+  --animate-aurora-b: aurora-b 38s ease-in-out infinite alternate;
+  --animate-aurora-c: aurora-c 44s ease-in-out infinite alternate;
+  --animate-shimmer: shimmer 7s cubic-bezier(0.4, 0, 0.2, 1) 1.2s infinite;
+
+  @keyframes aurora-a {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(12vw, 8vh, 0) scale(1.15); }
+  }
+  @keyframes aurora-b {
+    from { transform: translate3d(0, 0, 0) scale(1.1); }
+    to { transform: translate3d(-10vw, 10vh, 0) scale(0.95); }
+  }
+  @keyframes aurora-c {
+    from { transform: translate3d(0, 0, 0) scale(0.9); }
+    to { transform: translate3d(6vw, -12vh, 0) scale(1.1); }
+  }
+  /* Transform-only so it stays on the compositor; the sweep crosses in the first 30%, then rests. */
+  @keyframes shimmer {
+    0% { transform: translateX(-120%) skewX(-20deg); }
+    30%, 100% { transform: translateX(320%) skewX(-20deg); }
+  }
+}
+
+/*
+ * Light theme ("frost"). Secondary text #5F5F66 keeps >= 4.5:1 on the lightest glass.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
+  --card: rgb(255 255 255 / 0.6);
+  --card-foreground: #1d1d1f;
+  --popover: rgb(250 250 252 / 0.92);
+  --popover-foreground: #1d1d1f;
+  --primary: #1d1d1f;
+  --primary-foreground: #f5f5f7;
+  --secondary: rgb(15 15 20 / 0.06);
+  --secondary-foreground: #1d1d1f;
+  --muted: rgb(15 15 20 / 0.045);
+  --muted-foreground: #5f5f66;
+  --accent: rgb(15 15 20 / 0.06);
+  --accent-foreground: #1d1d1f;
+  --destructive: #c62a2a;
+  --border: rgb(15 15 20 / 0.1);
+  --input: rgb(15 15 20 / 0.14);
+  --ring: rgb(79 70 229 / 0.55);
+  --chart-1: #059669;
+  --chart-2: #6e6e73;
+  --chart-3: #4f46e5;
+  --chart-4: #0891b2;
+  --chart-5: #d97706;
+  --radius: 0.75rem;
+
+  --glass-bg: rgb(255 255 255 / 0.55);
+  --glass-bg-strong: rgb(255 255 255 / 0.72);
+  --glass-inset: rgb(15 15 20 / 0.035);
+  --glass-border: rgb(15 15 20 / 0.08);
+  --glass-border-hover: rgb(15 15 20 / 0.2);
+  --glass-highlight: rgb(255 255 255 / 0.85);
+  --glass-drop: rgb(15 23 42 / 0.08);
+  --spotlight: rgb(99 102 241 / 0.08);
+
+  --aurora-1: rgb(129 140 248 / 0.35);
+  --aurora-2: rgb(148 163 210 / 0.35);
+  --aurora-3: rgb(103 232 249 / 0.28);
+  --shimmer-1: #4f46e5;
+  --shimmer-2: #0e7490;
 }
 
+/*
+ * Dark theme ("obsidian"). Muted text is #A1A1A6 rather than #86868B: #86868B sits
+ * at ~4.5:1 on glass over the aurora, which fails AA where the aurora is brightest.
+ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #050507;
+  --foreground: #f5f5f7;
+  --card: rgb(255 255 255 / 0.05);
+  --card-foreground: #f5f5f7;
+  --popover: rgb(20 20 24 / 0.88);
+  --popover-foreground: #f5f5f7;
+  --primary: #f5f5f7;
+  --primary-foreground: #0a0a0c;
+  --secondary: rgb(255 255 255 / 0.08);
+  --secondary-foreground: #f5f5f7;
+  --muted: rgb(255 255 255 / 0.06);
+  --muted-foreground: #a1a1a6;
+  --accent: rgb(255 255 255 / 0.08);
+  --accent-foreground: #f5f5f7;
+  --destructive: #ff7b7b;
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.14);
+  --ring: rgb(165 180 252 / 0.6);
+  --chart-1: #34d399;
+  --chart-2: #a1a1a6;
+  --chart-3: #818cf8;
+  --chart-4: #67e8f9;
+  --chart-5: #fbbf24;
+
+  --glass-bg: rgb(255 255 255 / 0.05);
+  --glass-bg-strong: rgb(255 255 255 / 0.08);
+  --glass-inset: rgb(255 255 255 / 0.035);
+  --glass-border: rgb(255 255 255 / 0.12);
+  --glass-border-hover: rgb(255 255 255 / 0.25);
+  --glass-highlight: rgb(255 255 255 / 0.15);
+  --glass-drop: rgb(0 0 0 / 0.4);
+  --spotlight: rgb(255 255 255 / 0.07);
+
+  --aurora-1: rgb(67 56 202 / 0.32);
+  --aurora-2: rgb(71 85 140 / 0.3);
+  --aurora-3: rgb(34 211 238 / 0.14);
+  --shimmer-1: #a5b4fc;
+  --shimmer-2: #a5f3fc;
 }
 
 @layer base {
@@ -126,5 +177,44 @@
   }
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  ::selection {
+    background: rgb(129 140 248 / 0.35);
+  }
+}
+
+@layer components {
+  /* Static headline gradient: animating background-position would repaint the LCP element every frame. */
+  .text-gradient {
+    background-image: linear-gradient(100deg, var(--foreground) 10%, var(--shimmer-1) 55%, var(--shimmer-2) 90%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  /* A light sweep across a pill; the host needs `relative overflow-hidden`. */
+  .shimmer-sweep {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, var(--glass-highlight), transparent);
+    pointer-events: none;
+    transform: translateX(-120%) skewX(-20deg);
+    animation: var(--animate-shimmer);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-sweep {
+    animation: none;
+    display: none;
+  }
+  .aurora-blob {
+    animation: none !important;
   }
 }
