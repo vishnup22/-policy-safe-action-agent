@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bento } from "@/components/landing/bento";
+import { DeferredBento } from "@/components/landing/deferred-bento";
 import { Hero } from "@/components/landing/hero";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { SiteFooter } from "@/components/landing/site-footer";
@@ -26,7 +26,7 @@ export default function Home() {
               played against a prompt-only baseline and the guarded agent.
             </p>
           </BlurFade>
-          <Bento />
+          <DeferredBento />
         </section>
       </main>
       <SiteFooter />

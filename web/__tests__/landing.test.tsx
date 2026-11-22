@@ -103,7 +103,7 @@ describe("Landing page", () => {
 
     const newest = newestMockRun();
     const guarded = newest.systems.find((s) => s.system === "guarded")!;
-    const results = await screen.findByRole("article", { name: "Baseline vs guarded" });
+    const results = await screen.findByRole("article", { name: "Baseline vs guarded" }, { timeout: 10_000 });
     expect(await within(results).findByText("Demo data")).toBeInTheDocument();
     expect(within(results).getAllByText(formatPercent(guarded.unauthorized_action_rate, 1)).length).toBeGreaterThan(0);
     expect(within(results).getAllByText(formatPercent(guarded.task_success_rate, 1)).length).toBeGreaterThan(0);

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -26,8 +26,7 @@ import type { Approval, DecisionOutcome, Event, SystemMetrics } from "@/lib/api/
 import { useAuth } from "@/lib/auth";
 import { decidingRules } from "@/lib/decisions";
 import { ACTION_LABELS, EVENT_LABELS, describeArgs, summarizeEvent } from "@/lib/events";
-import { loadLandingData, PREVIEW_CONVERSATION_ID, type DataSource, type LandingData } from "@/lib/landing";
-import { cn, formatPercent } from "@/lib/utils";
+import { loadLandingData, PREVIEW_CONVERSATION_ID, type DataSource, type LandingData } from "@/lib/landing";import { cn, formatPercent } from "@/lib/utils";
 import { MiniPassHatK } from "./mini-pass-hat-k";
 
 function useLandingData() {
@@ -451,6 +450,13 @@ function ApprovalsTile({ data }: { data: LandingData | undefined }) {
 
 export function Bento() {
   const { data, error } = useLandingData();
+
+  // The grid mounts after first paint, so a deep link like /#results needs a scroll once its target exists.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id) document.getElementById(id)?.scrollIntoView();
+  }, []);
+
   return (
     <>
       {error && (

@@ -7,9 +7,11 @@ import { LazyMotion, MotionConfig } from "framer-motion";
 import { ThemeProvider } from "next-themes";
 import { ApiError, type ApiClient } from "@/lib/api/client";
 import { AuthProvider, notifyUnauthorized } from "@/lib/auth";
-import { loadMotionFeatures } from "@/lib/motion";
+import { loadMotionFeatures, whenIdle } from "@/lib/motion";
 
-const Toaster = dynamic(() => import("@/components/ui/sonner").then((m) => m.Toaster), { ssr: false });
+const Toaster = dynamic(() => whenIdle().then(() => import("@/components/ui/sonner").then((m) => m.Toaster)), {
+  ssr: false,
+});
 
 function onApiError(err: unknown) {
   if (err instanceof ApiError && err.status === 401) notifyUnauthorized();

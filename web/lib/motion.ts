@@ -44,5 +44,22 @@ export function pageMotion(reduced: boolean) {
   } as const;
 }
 
-/** Loaded lazily by <LazyMotion> so motion features stay out of the first-load bundle. */
-export const loadMotionFeatures = () => import("framer-motion").then((mod) => mod.domMax);
+/** Resolves once the page has loaded and the main thread is idle, so deferred work stays out of first paint. */
+export function whenIdle(timeout = 1500): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  return new Promise((resolve) => {
+    const schedule = () => {
+      if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(() => resolve(), { timeout });
+      else setTimeout(resolve, 50);
+    };
+    if (document.readyState === "complete") schedule();
+    else window.addEventListener("load", schedule, { once: true });
+  });
+}
+
+/**
+ * Loaded lazily by <LazyMotion> so motion features stay out of the first-load bundle. Until they
+ * arrive, `m` components render their `initial` styles; nothing above the fold animates on entry.
+ */
+export const loadMotionFeatures = () =>
+  whenIdle().then(() => import("framer-motion").then((mod) => mod.domMax));

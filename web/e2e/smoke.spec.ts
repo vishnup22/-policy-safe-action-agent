@@ -61,6 +61,7 @@ test.describe("landing page", () => {
     const sections = page.getByRole("navigation", { name: "Sections" });
     if ((page.viewportSize()?.width ?? 0) >= 768) {
       await expect(sections).toBeVisible();
+      await expect(page.getByRole("article", { name: "Baseline vs guarded" })).toBeAttached();
       await sections.getByRole("link", { name: "Results" }).click();
       await expect(sections.getByRole("link", { name: "Results" })).toHaveAttribute("aria-current", "location");
     } else {
