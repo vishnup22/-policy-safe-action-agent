@@ -97,6 +97,7 @@ forbidden_actions:
 - action: issue_store_credit
   args_match:
     customer_id: cus_000001
+    amount_cents: 5001
 tags:
 - escalation
 - a4
