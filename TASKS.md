@@ -121,29 +121,29 @@ Absorbs former T1.5 and T2.4. Goal: the data and test cases that every eval and 
 ### Lane C — Web console (mock-first) · Cursor · `ui/t1-c-web-console`
 Absorbs former T8.1–T8.4, pulled forward and built against `docs/contracts/api.md` with a mock adapter. Goal: a polished operator console that switches to the live API later with one env var.
 
-- [ ] **C1 Scaffold** (`web/`)
+- [x] **C1 Scaffold** (`web/`)
   - Next.js (App Router) + TypeScript strict + Tailwind CSS + shadcn/ui, pnpm. Scripts: `dev`, `build`, `lint`, `typecheck` (`tsc --noEmit`), `test` (Vitest + Testing Library).
   - `web/.env.example` with `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_API_MODE=mock|live`.
-- [ ] **C2 Typed API layer** (`web/lib/api/`)
+- [x] **C2 Typed API layer** (`web/lib/api/`)
   - Zod schemas mirroring **every** shape in `docs/contracts/api.md` (Event + per-type payloads, ActionIntent with discriminated `args`, Decision, Approval, EvalRunReport, …); TS types inferred from Zod.
   - `ApiClient` interface with two implementations: `LiveClient` (fetch + bearer token + error envelope) and `MockClient` (in-memory, latency jitter, deterministic fixtures).
   - Mock fixtures tell the demo story: (1) in-window refund ALLOWED and executed, (2) out-of-window refund DENIED with `OUTSIDE_RETURN_WINDOW`, (3) $340 refund → REQUIRE_APPROVAL pending, (4) prompt-injection attempt in order notes blocked, (5) follow-up scheduled and fired, plus 2 eval runs with baseline vs guarded metrics.
   - TanStack Query for data fetching/caching.
-- [ ] **C3 Chat page** (`/chat`)
+- [x] **C3 Chat page** (`/chat`)
   - Start conversation (optional customer email), send messages, agent replies.
   - Inline **action cards** under agent turns: proposed action + args, decision badge (ALLOW / REQUIRE_APPROVAL / REQUIRE_VERIFICATION / DENY with distinct colors + icons), deciding rule IDs, reason codes, customer-safe messages, policy version.
-- [ ] **C4 Replay / audit viewer** (`/conversations`, `/conversations/[id]`)
+- [x] **C4 Replay / audit viewer** (`/conversations`, `/conversations/[id]`)
   - Conversation list with status and executed/blocked counts.
   - Timeline of all events by `seq`; filter by event type; step-through with keyboard (←/→); detail panel showing raw payload, and for `policy_decision`: rule results table + `facts_snapshot` + policy version.
   - "Executed actions" summary: every executed action links to the decision that allowed it.
-- [ ] **C5 Approvals queue** (`/approvals`)
+- [x] **C5 Approvals queue** (`/approvals`)
   - Tabs pending / approved / rejected; detail drawer with intent, decision and conversation link; approve / reject with note; optimistic update with rollback on error; 409 handling.
-- [ ] **C6 Eval dashboard** (`/evals`, `/evals/[runId]`)
+- [x] **C6 Eval dashboard** (`/evals`, `/evals/[runId]`)
   - Run list; run detail with baseline vs guarded headline cards (task success, unauthorized action rate, false refusals, escalation accuracy, P95 latency, cost per resolved), **pass^k line chart** (k = 1…4, both systems), per-category success table, scenario drill-down to trial results.
   - Accessible charts (labels, not color-only) and a clear "lower is better" marker on unauthorized-action rate.
-- [ ] **C7 Auth & shell**
+- [x] **C7 Auth & shell**
   - Demo passcode login → token held in memory (+ sessionStorage), route guard, logout. App shell with nav, dark/light theme, responsive down to 375 px.
-- [ ] **C8 Tests**
+- [x] **C8 Tests**
   - Zod parsing tests against the example JSON in `docs/contracts/api.md`; component tests for decision badge, action card, rule results table, approvals optimistic update; MockClient story fixtures validate against the Zod schemas.
 - **Acceptance:** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` green; every page fully clickable in mock mode; zero changes outside `web/`.
 
