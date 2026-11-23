@@ -1,4 +1,4 @@
-# API Contract v0.1
+# API Contract v0.2
 
 The HTTP contract between the FastAPI backend (`src/psa/api/`) and the web console (`web/`).
 JSON field names and enums mirror the Pydantic models in `src/psa/domain/` exactly — **those models are the source of truth**; this file documents them for the frontend.
@@ -99,6 +99,8 @@ Payload shapes by type:
 | `action_failed` | `{ "intent_id": string, "error": string, "retryable": boolean, "attempt": number }` |
 | `follow_up_scheduled` | `{ "follow_up_id": string, "due_at": string, "note": string }` |
 | `follow_up_fired` | `{ "follow_up_id": string }` |
+| `verification_requested` | `{ "method": "email_and_postal_code", "order_id": string }` |
+| `verification_completed` | `{ "verified": boolean, "method": "email_and_postal_code", "customer_id": string \| null, "attempts_remaining": number }` |
 
 ### ActionIntent (`psa.domain.actions.ActionIntent`)
 ```json
@@ -165,6 +167,11 @@ Payload shapes by type:
 ### `GET /api/policies/{policy_set}`
 ```json
 { "policy_set": "larkspur-returns", "version": "2026.11.21-1", "yaml": "string", "rules": [ { "id": "REFUND_WINDOW", "applies_to": ["issue_refund"], "description": "string" } ] }
+```
+### `GET /api/policies/{policy_set}/diff?from=<version>&to=<version>` (v0.2, T5.0)
+Rule-level diff between two versions of one policy set, for the policy-change view. `404` if either version is unknown. A rule is `changed` when any of its fields differ; `before` / `after` are the rule objects exactly as in the YAML.
+```json
+{ "policy_set": "larkspur-returns", "from_version": "2026.11.21-1", "to_version": "2026.11.21-2", "added": [ { "id": "NEW_RULE", "rule": { } } ], "removed": [ { "id": "OLD_RULE", "rule": { } } ], "changed": [ { "id": "REFUND_WINDOW", "before": { }, "after": { } } ], "unchanged": ["ORDER_EXISTS"] }
 ```
 
 ## Evals
