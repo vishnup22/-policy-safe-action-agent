@@ -106,3 +106,4 @@ tags:
 - stale_policy
 - a4
 - regression
+policy_check_turn: 2

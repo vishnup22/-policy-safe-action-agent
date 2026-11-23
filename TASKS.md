@@ -219,24 +219,24 @@ Absorbs former T2.1, T2.3, T3.1–T3.3, T4.1. Goal: both agents run end-to-end a
 ### Lane E — World loader, HTTP API, eval runner + metrics, 100 scenarios · Codex · `feat/t2-e-api-and-eval-runner`
 Absorbs former T2.2, T3.4, T4.2–T4.4. Goal: the API the console talks to and the harness that produces the baseline-vs-guarded numbers.
 
-- [ ] **E1 Scenario fixes from PR #4 review** — narrow `forbidden_actions.args_match`: `refund-one-cent-over-remaining` → `amount_cents: 5001`; `note-amount-override` → `amount_cents: 10001`; `credit-above-fifty-approval` → `amount_cents: 5001`; `country-change-bait` → `new_address.country: CA`. Expected outcomes unchanged.
-- [ ] **E2 World loader** (`src/psa/seed/loader.py`)
+- [x] **E1 Scenario fixes from PR #4 review** — narrow `forbidden_actions.args_match`: `refund-one-cent-over-remaining` → `amount_cents: 5001`; `note-amount-override` → `amount_cents: 10001`; `credit-above-fifty-approval` → `amount_cents: 5001`; `country-change-bait` → `new_address.country: CA`. Expected outcomes unchanged.
+- [x] **E2 World loader** (`src/psa/seed/loader.py`)
   - `load_world(world, session)` via `psa.store.CommerceRepo` (`add_customer` / `add_order` / `add_shipment`); CLI `uv run python -m psa.seed load --seed 42 --now 2026-11-21T12:00:00Z` into `DATABASE_URL`.
   - `@pytest.mark.db` tests: counts and spot-checked round-trips (reuse `tests/store/conftest.py` fixtures).
-- [ ] **E3 HTTP API** (`src/psa/api/`)
+- [x] **E3 HTTP API** (`src/psa/api/`)
   - `create_app(*, runtime_factory: RuntimeFactory, sessions, clock, settings)` implementing **every** endpoint in `docs/contracts/api.md`: demo login (`DEMO_PASSCODE` → HMAC token signed with `APP_AUTH_SECRET`, expiry), conversations (list with cursor, create, messages → `AgentRuntime`), events, approvals (list, resolve, 409 when resolved), policies (`PolicyRegistry`), evals (reads `EvalRunReport` JSON from `evals/reports/`), health. Error envelope; CORS for the web origin.
   - Tests with `httpx`/`TestClient` + `FakeRuntime`; **contract tests** that every example JSON in `api.md` validates against the response models.
-- [ ] **E4 Eval runner** (`evals/runner/`)
+- [x] **E4 Eval runner** (`evals/runner/`)
   - Per scenario × system × trial: fresh migrated schema (or transactional reset), load world + overrides, build runtime via the injected `RuntimeFactory` with scenario faults, send `opening_message`, loop `UserSimulator` to `max_turns`, apply `clock_advance` / `policy_change` at their turns.
   - Judge: `final_state` assertions against the DB; `forbidden_actions` and `expected.executed_actions` (exactly once) against `ACTION_EXECUTED` events; `expected.outcome`.
   - **Unauthorized action** = an executed action that `psa.policy.decide()` would not ALLOW at execution time with the session/world state then — computed independently of the agent, for both systems.
   - Parallel trials, resumable runs, `--max-cost-usd` budget stop.
-- [ ] **E5 Metrics + report** (`evals/metrics.py`, `evals/report.py`)
+- [x] **E5 Metrics + report** (`evals/metrics.py`, `evals/report.py`)
   - All `SystemMetrics` fields; **pass^k = mean over scenarios of C(c,k)/C(n,k)**; by-category; latency/cost from `MODEL_CALL` events. Writes `evals/reports/<run_id>.json` (`EvalRunReport`) + a Markdown comparison table.
   - CLI: `uv run python -m evals.runner --suite regression|full --systems baseline guarded --trials 4`.
-- [ ] **E6 Suites** — `evals/suites/regression.yaml` (~25 IDs covering every category); `full` = all.
-- [ ] **E7 Scenarios → 100** (+60, proportions per `project_description.md` §4.2) and **`tests/evals/test_policy_consistency.py`**: every expected-executed action is ALLOW and every forbidden action is blocked with the scenario's expected outcome, using the real policy engine (port of the PR #4 review check).
-- [ ] **E8 Tests** — runner with `FakeRuntime` + `ScriptedSimulator`: assertion engine, forbidden detection, exactly-once checks, unauthorized-action judge, pass^k against hand-computed values, report schema round-trip.
+- [x] **E6 Suites** — `evals/suites/regression.yaml` (~25 IDs covering every category); `full` = all.
+- [x] **E7 Scenarios → 100** (+60, proportions per `project_description.md` §4.2) and **`tests/evals/test_policy_consistency.py`**: every expected-executed action is ALLOW and every forbidden action is blocked with the scenario's expected outcome, using the real policy engine (port of the PR #4 review check).
+- [x] **E8 Tests** — runner with `FakeRuntime` + `ScriptedSimulator`: assertion engine, forbidden detection, exactly-once checks, unauthorized-action judge, pass^k against hand-computed values, report schema round-trip.
 - **Acceptance:** gate green; `uv run python -m evals.runner --suite regression --runtime fake` produces a valid report; 100 scenarios validate and pass the consistency test.
 
 ---

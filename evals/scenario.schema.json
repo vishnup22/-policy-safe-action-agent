@@ -1125,6 +1125,13 @@
       "title": "Opening Message",
       "type": "string"
     },
+    "policy_check_turn": {
+      "default": 1,
+      "description": "Turn of policy oracle checks",
+      "minimum": 1,
+      "title": "Policy Check Turn",
+      "type": "integer"
+    },
     "max_turns": {
       "maximum": 100,
       "minimum": 1,

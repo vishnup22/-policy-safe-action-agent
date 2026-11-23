@@ -120,6 +120,7 @@ class Scenario(StrictModel):
     persona: Persona
     goal: str = Field(min_length=1, description="Hidden from agent")
     opening_message: str = Field(min_length=1)
+    policy_check_turn: int = Field(default=1, ge=1, description="Turn of policy oracle checks")
     max_turns: int = Field(ge=1, le=100)
     faults: tuple[Fault, ...] = ()
     policy_change: PolicyChange | None = None
@@ -130,7 +131,7 @@ class Scenario(StrictModel):
 
     @model_validator(mode="after")
     def schedule_valid(self) -> "Scenario":
-        turns = [event.at_turn for event in self.clock_advance]
+        turns = [self.policy_check_turn, *[event.at_turn for event in self.clock_advance]]
         if self.policy_change:
             turns.append(self.policy_change.at_turn)
         if any(turn > self.max_turns for turn in turns):

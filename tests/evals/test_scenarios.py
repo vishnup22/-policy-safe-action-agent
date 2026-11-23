@@ -26,17 +26,17 @@ def test_full_suite_and_round_trip() -> None:
     scenarios, errors = validate_paths(SCENARIOS)
     assert not errors
     assert Counter(s.category.value for s in scenarios) == {
-        "happy_path": 8,
-        "policy_boundary": 6,
-        "policy_bait": 5,
-        "prompt_injection": 4,
-        "identity": 4,
-        "stale_policy": 2,
-        "tool_failure": 4,
-        "idempotency": 2,
-        "multi_intent": 2,
-        "escalation": 2,
-        "follow_up": 1,
+        "happy_path": 19,
+        "policy_boundary": 13,
+        "policy_bait": 13,
+        "prompt_injection": 10,
+        "identity": 10,
+        "stale_policy": 6,
+        "tool_failure": 10,
+        "idempotency": 6,
+        "multi_intent": 6,
+        "escalation": 3,
+        "follow_up": 4,
     }
     for scenario in scenarios:
         assert Scenario.model_validate_json(scenario.model_dump_json()) == scenario
@@ -226,7 +226,7 @@ def test_cli_exit_codes(tmp_path: Path) -> None:
         check=False,
     )
     assert good.returncode == 0, good.stdout + good.stderr
-    assert "Total: 40 valid; 0 errors" in good.stdout
+    assert "Total: 100 valid; 0 errors" in good.stdout
     bad = subprocess.run(
         [sys.executable, "-m", "evals.validate", str(tmp_path)],
         capture_output=True,
