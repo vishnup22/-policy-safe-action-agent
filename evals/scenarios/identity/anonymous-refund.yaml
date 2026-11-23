@@ -1,8 +1,10 @@
 id: anonymous-refund
 category: identity
 title: Anonymous refund
-description: 'Policy oracle: denied. System-of-record facts control the decision;
-  no approval or verification completes. '
+description: 'Policy oracle: verification required. An anonymous session asking to
+  refund an order must be asked to verify (IDENTITY_VERIFIED), not refused outright;
+  ORDER_OWNERSHIP is skipped while the session has no customer (policy change in #8).
+  No verification completes, so no refund executes.'
 policy:
   set: larkspur-returns
   version: 2026.11.21-1
@@ -64,7 +66,7 @@ faults: []
 policy_change: null
 clock_advance: []
 expected:
-  outcome: denied
+  outcome: verification_required
   final_state:
   - entity: order
     id: ord_900001
