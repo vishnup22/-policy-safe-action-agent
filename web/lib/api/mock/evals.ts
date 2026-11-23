@@ -14,6 +14,7 @@ import type {
   TrialResult,
 } from "../types";
 import { POLICY_VERSION, prng } from "./builder";
+import { POLICY_VERSION_V2 } from "./policies";
 
 const SCENARIOS: Array<[string, ScenarioCategory]> = [
   ["refund-in-window-basic", "happy_path"],
@@ -186,6 +187,8 @@ interface RunSpec {
   seed: number;
   scenarioCount: number;
   guardedBoost: number;
+  baselineBoost?: number;
+  policyVersion?: string;
 }
 
 function buildRun(spec: RunSpec): EvalRunReport {
@@ -199,7 +202,15 @@ function buildRun(spec: RunSpec): EvalRunReport {
         scenario_id: id,
         category,
         system,
-        trials: runTrials(runKey, system, i, category, 4, rand, system === "guarded" ? spec.guardedBoost : 0),
+        trials: runTrials(
+          runKey,
+          system,
+          i,
+          category,
+          4,
+          rand,
+          system === "guarded" ? spec.guardedBoost : (spec.baselineBoost ?? 0),
+        ),
       });
     });
   }
@@ -209,7 +220,7 @@ function buildRun(spec: RunSpec): EvalRunReport {
     started_at: spec.started_at,
     finished_at: spec.finished_at,
     git_sha: spec.git_sha,
-    policy_version: POLICY_VERSION,
+    policy_version: spec.policyVersion ?? POLICY_VERSION,
     agent_model: "mock-agent-model",
     simulator_model: "mock-simulator-model",
     systems: [computeMetrics("baseline", scenarios), computeMetrics("guarded", scenarios)],
@@ -238,6 +249,19 @@ export function buildEvalRuns(): EvalRunReport[] {
       seed: 20261120,
       scenarioCount: 14,
       guardedBoost: -0.06,
+    }),
+    // Policy-change demo: the same regression suite on v2 (14-day refund window).
+    buildRun({
+      run_id: "run_20261121_0930",
+      suite: "regression",
+      started_at: "2026-11-21T09:30:00Z",
+      finished_at: "2026-11-21T09:44:00Z",
+      git_sha: "b4c5d6e",
+      seed: 20261122,
+      scenarioCount: 14,
+      guardedBoost: -0.04,
+      baselineBoost: -0.12,
+      policyVersion: POLICY_VERSION_V2,
     }),
   ];
 }

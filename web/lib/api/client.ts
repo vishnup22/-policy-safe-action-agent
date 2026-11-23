@@ -11,6 +11,7 @@ import type {
   Health,
   LoginResponse,
   PolicyDetail,
+  PolicyDiff,
   PolicyList,
   ResolveApprovalRequest,
   SendMessageResponse,
@@ -45,6 +46,8 @@ export interface ApiClient {
 
   listPolicies(): Promise<PolicyList>;
   getPolicy(policySet: string): Promise<PolicyDetail>;
+  /** `404` when either version is unknown. */
+  getPolicyDiff(policySet: string, versions: { from: string; to: string }): Promise<PolicyDiff>;
 
   listEvalRuns(params?: { limit?: number }): Promise<EvalRunList>;
   getEvalRun(runId: string): Promise<EvalRunReport>;

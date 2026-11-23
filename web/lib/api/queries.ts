@@ -13,6 +13,8 @@ export const queryKeys = {
   evalRuns: ["evals", "runs"] as const,
   evalRun: (id: string) => ["evals", "run", id] as const,
   policies: ["policies"] as const,
+  policy: (set: string) => ["policies", "detail", set] as const,
+  policyDiff: (set: string, from: string, to: string) => ["policies", "diff", set, from, to] as const,
 };
 
 export function useConversations() {
@@ -43,6 +45,20 @@ export function useEvalRun(id: string) {
 export function usePolicies() {
   const api = useApi();
   return useQuery({ queryKey: queryKeys.policies, queryFn: () => api.listPolicies() });
+}
+
+export function usePolicy(set: string) {
+  const api = useApi();
+  return useQuery({ queryKey: queryKeys.policy(set), queryFn: () => api.getPolicy(set), enabled: !!set });
+}
+
+export function usePolicyDiff(set: string, versions: { from: string; to: string } | null) {
+  const api = useApi();
+  return useQuery({
+    queryKey: queryKeys.policyDiff(set, versions?.from ?? "", versions?.to ?? ""),
+    queryFn: () => api.getPolicyDiff(set, versions!),
+    enabled: !!set && !!versions,
+  });
 }
 
 export interface ResolveVars {

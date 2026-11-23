@@ -378,6 +378,22 @@ export const PolicyDetailSchema = z.object({
   ),
 });
 
+/** A rule object exactly as written in the policy YAML. */
+const policyRuleBody = jsonObject;
+
+export const PolicyRuleRefSchema = z.object({ id: z.string(), rule: policyRuleBody });
+export const PolicyRuleChangeSchema = z.object({ id: z.string(), before: policyRuleBody, after: policyRuleBody });
+
+export const PolicyDiffSchema = z.object({
+  policy_set: z.string(),
+  from_version: z.string(),
+  to_version: z.string(),
+  added: z.array(PolicyRuleRefSchema),
+  removed: z.array(PolicyRuleRefSchema),
+  changed: z.array(PolicyRuleChangeSchema),
+  unchanged: z.array(z.string()),
+});
+
 // ---------------------------------------------------------------- evals
 
 export const HeadlineMetricsSchema = z.object({
