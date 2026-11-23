@@ -97,12 +97,14 @@ class PolicySafeRuntime:
             agent = self._agent(db, log, row)
             transcript = [*transcript_row.messages, self._llm.user_message(text)]
             pending: str | None = None
+            infrastructure_error: str | None = None
             try:
                 outcome = agent.run(transcript)
                 transcript, reply = outcome.state["transcript"], outcome.state["reply"]
                 pending = outcome.pending_approval_id
-            except LLMError:
+            except LLMError as exc:
                 reply = LLM_ERROR_REPLY
+                infrastructure_error = f"llm: {exc}"[:500]
             log.append(
                 conversation_id,
                 EventType.AGENT_MESSAGE,
@@ -116,6 +118,7 @@ class PolicySafeRuntime:
             reply_text=reply,
             events=tuple(events),
             pending_approval_id=pending,
+            infrastructure_error=infrastructure_error,
         )
 
     def resolve_approval(

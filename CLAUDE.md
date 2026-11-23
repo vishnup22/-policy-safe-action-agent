@@ -72,6 +72,7 @@ uv run python -m psa.tools.mcp_server             # MCP server: read tools + pro
 uv run pytest -m llm                              # live LLM smoke tests (needs LLM_API_KEY, costs money)
 uv run python -m psa.seed load --seed 42 --now 2026-11-21T12:00:00Z   # seed the world into DATABASE_URL
 uv run uvicorn psa.api.main:app --port 8000               # API on the real runtime (needs DEMO_PASSCODE, APP_AUTH_SECRET)
+uv run python -m psa.scheduler [--once]                   # durable follow-up worker (fires due follow-ups)
 uv run python -m evals.runner --suite regression          # real runtime + LLM simulator (calls models)
 uv run python -m evals.runner --suite regression --runtime fake   # offline harness check, no models
 uv run python -m evals.runner --suite full --trials 4     # nightly / pre-demo
