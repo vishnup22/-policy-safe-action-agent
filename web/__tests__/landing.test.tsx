@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import Home from "@/app/page";
 import { Providers } from "@/components/providers";
@@ -101,6 +101,10 @@ describe("Landing page", () => {
     expect(screen.getAllByRole("link", { name: /Open console/ })[0]).toHaveAttribute("href", "/chat");
     expect(screen.getByRole("link", { name: /View on GitHub/ })).toHaveAttribute("target", "_blank");
 
+    expect(screen.getByText("Loading results…").closest("[aria-busy]")).toHaveAttribute("id", "results");
+    expect(screen.queryByRole("article", { name: "Baseline vs guarded" })).not.toBeInTheDocument();
+    fireEvent.scroll(window);
+
     const newest = newestMockRun();
     const guarded = newest.systems.find((s) => s.system === "guarded")!;
     const results = await screen.findByRole("article", { name: "Baseline vs guarded" }, { timeout: 10_000 });
@@ -117,5 +121,24 @@ describe("Landing page", () => {
 
     const footer = screen.getByRole("navigation", { name: "Footer" });
     expect(within(footer).getByRole("link", { name: "Eval runs" })).toHaveAttribute("href", "/evals");
+  });
+
+  it("loads the bento without a scroll when the URL links into it, then scrolls to the anchor", async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    window.location.hash = "#results";
+    try {
+      render(
+        <Providers client={mock()}>
+          <Home />
+        </Providers>,
+      );
+      await screen.findByRole("article", { name: "Baseline vs guarded" }, { timeout: 10_000 });
+      await vi.waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+      expect(scrollIntoView.mock.contexts[0]).toHaveAttribute("id", "results");
+    } finally {
+      window.location.hash = "";
+      delete (Element.prototype as Partial<Element>).scrollIntoView;
+    }
   });
 });
