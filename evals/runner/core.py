@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from evals.metrics import TrialRecord, metrics, percentile
 from evals.report import atomic_write, write_report
-from evals.runner.audit import ExecutionAudit
+from evals.runner.audit import EVAL_REVIEWER, ExecutionAudit
 from evals.runner.database import trial_database
 from evals.runner.judge import check_final_state, judge_events
 from evals.schema import Scenario
@@ -26,6 +26,7 @@ from psa.clock import SimulatedClock
 from psa.domain import EvalRunReport, Event, EventType, ScenarioResult, SystemUnderTest, TrialResult
 from psa.policy import PolicyRegistry
 from psa.runtime.ports import (
+    ApprovalResolution,
     RuntimeConfig,
     RuntimeFactory,
     SessionStart,
@@ -33,6 +34,7 @@ from psa.runtime.ports import (
     ToolFault,
     UserSimulator,
 )
+from psa.scheduler import Scheduler
 from psa.seed.loader import load_world
 from psa.store import EventLog
 
@@ -89,12 +91,20 @@ def run_trial(
     failure: str | None = None
     budget_interrupted = False
     with ExecutionAudit(
-        sessions, world, registry, clock, scenario.policy.set, lambda: active_version
+        sessions,
+        world,
+        registry,
+        clock,
+        scenario.policy.set,
+        lambda: active_version,
+        allow_operator_approval=scenario.operator_resolution == "approved",
     ) as audit:
         for number in range(1, scenario.max_turns + 1):
             for advance in scenario.clock_advance:
                 if advance.at_turn == number:
                     clock.advance(advance.by)
+            if scenario.poll_follow_ups:
+                Scheduler(sessions, clock).run_due()
             if scenario.policy_change and scenario.policy_change.at_turn == number:
                 registry.get(scenario.policy.set, scenario.policy_change.to_version)
                 active_version = scenario.policy_change.to_version
@@ -116,23 +126,42 @@ def run_trial(
                     previous = EventLog(db).read(conversation)
                     last_seq = previous[-1].seq if previous else -1
                 turn = None
+                operator_turn = None
                 try:
                     turn = runtime.handle_user_message(conversation, message)
+                    if turn.pending_approval_id and scenario.operator_resolution:
+                        resolution = ApprovalResolution(scenario.operator_resolution)
+                        operator_turn = runtime.resolve_approval(
+                            turn.pending_approval_id, resolution, reviewer=EVAL_REVIEWER
+                        )
+                        if scenario.repeat_resolution:
+                            try:
+                                runtime.resolve_approval(
+                                    turn.pending_approval_id, resolution, reviewer=EVAL_REVIEWER
+                                )
+                            except LookupError:
+                                pass
+                            else:
+                                failure = "runtime accepted a second approval resolution"
                 except Exception as error:
                     failure = f"runtime failure: {type(error).__name__}"
                 with sessions() as db:
                     appended = [e for e in EventLog(db).read(conversation) if e.seq > last_seq]
-                observed = appended or (list(turn.events) if turn else [])
+                observed = appended or [
+                    event for step in (turn, operator_turn) if step for event in step.events
+                ]
                 turn_events.extend(observed)
                 for event in observed:
                     version_at[event.seq] = active_version
                 budget.spent += sum(
                     float(e.payload["cost_usd"]) for e in observed if e.type == EventType.MODEL_CALL
                 )
-                if turn is None:
+                if turn is None or failure:
                     break
                 turn_count += 1
                 transcript.append(SimulatorTurn(role="agent", text=turn.reply_text))
+                if operator_turn:
+                    transcript.append(SimulatorTurn(role="agent", text=operator_turn.reply_text))
                 if turn.ended:
                     break
     with sessions() as db:
@@ -141,7 +170,13 @@ def run_trial(
         if not events:
             events = turn_events
         judgment = judge_events(
-            scenario, world, events, registry, version_at=version_at, audited=audit.decisions
+            scenario,
+            world,
+            events,
+            registry,
+            version_at=version_at,
+            audited=audit.decisions,
+            approved_executions=audit.approved_executions,
         )
         judgment.errors.extend(check_final_state(scenario, world, db))
     if failure:

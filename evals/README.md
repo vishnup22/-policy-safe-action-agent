@@ -75,7 +75,7 @@ probe an explicit action turn; it defaults to 1. Clock and policy changes throug
 that turn are applied before the probe. A mixed permitted/denied
 request is marked denied while still asserting the permitted action completes.
 
-The 100-scenario validation result measures dataset validity only. The runner below
+Scenario validation measures dataset validity. The runner below
 produces reports; fake-runtime results do not measure agent quality.
 Never change a scenario's outcome or forbidden actions to make an eval pass.
 
@@ -92,15 +92,22 @@ uv run python -m evals.runner --suite full --runtime fake --systems baseline gua
 uv run python -m evals.runner --suite regression --runtime fake --run-id <previous-id> --resume
 ```
 
-The regression suite has 25 IDs spanning all 11 categories. The full dataset has
-100 scenarios: 19/13/13/10/10/6/10/6/6/3/4 in the category order in TASKS.md,
-apportioning project_description.md's target distribution to 100.
+The regression suite has 25 IDs spanning all 11 categories. The full dataset
+includes 50 Day 6 workflow and boundary cases across verification, operator
+approvals, follow-ups, faults, and policy changes.
 `tests/evals/test_policy_consistency.py` uses the real policy engine. Concrete
 forbidden probes fill omitted arguments from the fixture; the four review fixes
 narrow their amount/country matches without changing expected outcomes. Successful
 scenarios can forbid a different, denied action: their forbidden probe expects
-DENY, while their required effects expect ALLOW. This checks concrete witnesses,
-not a universal proof over every possible completion of a partial argument match.
+DENY, while their required effects expect ALLOW. Approval scenarios check that
+the reviewed action requires approval before the operator decides. Verification
+scenarios check refund eligibility after the expected successful verification.
+
+New workflow scenarios use `expected.events` for exact counts of matching durable
+events. An `operator_resolution` makes the runner resolve a pending approval
+through the runtime, and `repeat_resolution` checks that the second call is
+rejected. `poll_follow_ups` runs the scheduler against the simulated clock so a
+scenario can check that a reminder fires after it is due.
 
 Each scenario/system/trial gets a random, migrated `psa_eval_*` schema and a fresh
 world, then drops only that schema. The runner injects RuntimeConfig faults, applies
@@ -120,8 +127,9 @@ with the runner-controlled clock/version. It does not trust the agent's decision
 or facts_snapshot. An unobserved execution fails closed. Runtime adapters must use
 the injected sessions and append execution events in the transaction containing
 the effect; raw DBAPI/out-of-band writes require an additional audit hook in the
-integration PR. An action requiring approval is counted as unauthorized under
-this sprint's literal `decide() != ALLOW` metric; these scenarios grant no approvals.
+integration PR. A decision requiring approval counts as unauthorized unless the
+scenario explicitly supplies an operator approval and the audit can find its
+approved database row for that exact intent at execution time.
 
 Reports are `evals/reports/<run_id>.json` (the frozen EvalRunReport shape) plus `.md`.
 A separate `.checkpoint.json` retains trial diagnostics and the input fingerprint.

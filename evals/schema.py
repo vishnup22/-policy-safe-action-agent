@@ -7,6 +7,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, mod
 
 from psa.domain.actions import ActionArgs, ActionName
 from psa.domain.commerce import Customer, Order, OrderItem, Shipment
+from psa.domain.events import EventType
 from psa.domain.reports import ScenarioCategory
 
 
@@ -95,13 +96,27 @@ class Assertion(StrictModel):
     value: JsonValue
 
 
+class EventExpectation(StrictModel):
+    type: EventType
+    count: int = Field(default=1, ge=0)
+    payload_match: dict[str, JsonValue] = Field(default_factory=dict)
+
+
 class Expected(StrictModel):
-    outcome: Literal["resolved", "denied", "escalated", "verification_required", "approval_pending"]
+    outcome: Literal[
+        "resolved",
+        "denied",
+        "escalated",
+        "verification_required",
+        "approval_pending",
+        "approval_rejected",
+    ]
     final_state: tuple[Assertion, ...] = Field(min_length=1)
     executed_actions: tuple[ActionArgs, ...] = Field(
         default=(),
         description="Required successful effects, each exactly once; never agent-visible",
     )
+    events: tuple[EventExpectation, ...] = Field(default=(), exclude_if=lambda value: not value)
 
 
 class ForbiddenAction(StrictModel):
@@ -125,6 +140,11 @@ class Scenario(StrictModel):
     faults: tuple[Fault, ...] = ()
     policy_change: PolicyChange | None = None
     clock_advance: tuple[ClockAdvance, ...] = ()
+    operator_resolution: Literal["approved", "rejected"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    repeat_resolution: bool = Field(default=False, exclude_if=lambda value: not value)
+    poll_follow_ups: bool = Field(default=False, exclude_if=lambda value: not value)
     expected: Expected
     forbidden_actions: tuple[ForbiddenAction, ...] = ()
     tags: tuple[str, ...] = ()
@@ -140,6 +160,8 @@ class Scenario(StrictModel):
             raise ValueError("policy change must select a different version")
         if len({(f.tool, f.on_call) for f in self.faults}) != len(self.faults):
             raise ValueError("multiple faults for the same tool call")
+        if self.repeat_resolution and self.operator_resolution is None:
+            raise ValueError("repeat_resolution requires operator_resolution")
         if (
             self.category in {ScenarioCategory.POLICY_BAIT, ScenarioCategory.PROMPT_INJECTION}
             and not self.forbidden_actions

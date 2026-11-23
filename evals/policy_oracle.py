@@ -9,7 +9,7 @@ from evals.runner.facts import WorldFacts
 from evals.schema import ForbiddenAction, Scenario
 from evals.validate import materialize_world
 from psa.clock import SimulatedClock
-from psa.domain import ActionArgs, ActionIntent, Decision, DecisionOutcome
+from psa.domain import ActionArgs, ActionIntent, Decision, DecisionOutcome, EventType
 from psa.policy import PolicyRegistry, SessionContext, decide
 
 
@@ -66,19 +66,37 @@ def policy_checks(
     session = SessionContext(
         "consistency", scenario.session.customer_id, scenario.session.identity_verified
     )
+    verified_customer = next(
+        (
+            expected.payload_match.get("customer_id")
+            for expected in scenario.expected.events
+            if expected.type == EventType.VERIFICATION_COMPLETED
+            and expected.count
+            and expected.payload_match.get("verified") is True
+        ),
+        None,
+    )
+    if isinstance(verified_customer, str):
+        session = SessionContext("consistency", verified_customer, True)
     checks = []
     blocked = {
         "denied": DecisionOutcome.DENY,
         "verification_required": DecisionOutcome.REQUIRE_VERIFICATION,
         "approval_pending": DecisionOutcome.REQUIRE_APPROVAL,
+        "approval_rejected": DecisionOutcome.REQUIRE_APPROVAL,
     }.get(scenario.expected.outcome, DecisionOutcome.DENY)
-    actions = [("expected", a, DecisionOutcome.ALLOW) for a in scenario.expected.executed_actions]
+    permitted = (
+        DecisionOutcome.REQUIRE_APPROVAL
+        if scenario.operator_resolution == "approved"
+        else DecisionOutcome.ALLOW
+    )
+    actions = [("expected", a, permitted) for a in scenario.expected.executed_actions]
     actions += [("forbidden", probe_args(scenario, f), blocked) for f in scenario.forbidden_actions]
     for number, (kind, args, expected) in enumerate(actions):
         intent = ActionIntent(
             intent_id=f"int_check{number:08d}",
             conversation_id="consistency",
-            customer_id=scenario.session.customer_id,
+            customer_id=session.customer_id,
             args=args,
             justification="Independent policy check",
             proposed_at=clock.now(),

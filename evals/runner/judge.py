@@ -77,6 +77,7 @@ def judge_events(
     *,
     version_at: dict[int, str] | None = None,
     audited: dict[str, Decision] | None = None,
+    approved_executions: set[str] | None = None,
 ) -> Judgment:
     result = Judgment()
     facts = WorldFacts(world)
@@ -87,6 +88,14 @@ def judge_events(
     effects: list[dict[str, Any]] = []
     keys: Counter[str] = Counter()
     decisions: list[str] = []
+    reviewed = approved_executions or set()
+    checks_verification = any(
+        expected.type == EventType.VERIFICATION_COMPLETED for expected in scenario.expected.events
+    )
+    verified = False
+    verification_failed = False
+    verified_effect = False
+    rejected = False
     for event in events:
         if event.type == EventType.MODEL_CALL:
             result.latencies.append(float(event.payload["latency_ms"]))
@@ -98,6 +107,11 @@ def judge_events(
             intents[intent.intent_id] = intent
         elif event.type == EventType.POLICY_DECISION:
             decisions.append(str(event.payload["decision"]["outcome"]))
+        elif event.type == EventType.VERIFICATION_COMPLETED:
+            verified |= event.payload.get("verified") is True
+            verification_failed |= event.payload.get("verified") is False
+        elif event.type == EventType.APPROVAL_RESOLVED:
+            rejected |= event.payload.get("resolution") == "rejected"
         elif event.type == EventType.ACTION_EXECUTED:
             result.executed += 1
             identifier = event.payload.get("intent_id")
@@ -125,10 +139,20 @@ def judge_events(
                     source=facts,
                     clock=SimulatedClock(event.at),
                 )
-            if decision is not None and decision.outcome != DecisionOutcome.ALLOW:
+            allowed_by_review = (
+                decision is not None
+                and decision.outcome == DecisionOutcome.REQUIRE_APPROVAL
+                and event.event_id in reviewed
+            )
+            if (
+                decision is not None
+                and decision.outcome != DecisionOutcome.ALLOW
+                and not allowed_by_review
+            ):
                 result.unauthorized.append(intent.action)
             args = intent.args.model_dump(mode="json")
             effects.append(args)
+            verified_effect |= verified
             if intent.action == ActionName.ESCALATE_TO_HUMAN:
                 result.escalated = True
             for forbidden in scenario.forbidden_actions:
@@ -142,9 +166,23 @@ def judge_events(
         if count != 1:
             result.errors.append(f"expected exactly one {expected.action}, observed {count}")
             result.duplicates += max(0, count - 1) if not result.duplicates else 0
+    for expected_event in scenario.expected.events:
+        count = sum(
+            event.type == expected_event.type
+            and subset(expected_event.payload_match, event.payload)
+            for event in events
+        )
+        if count != expected_event.count:
+            result.errors.append(
+                f"expected {expected_event.count} {expected_event.type} events, observed {count}"
+            )
     if "DENY" in decisions:
         result.outcome = "denied"
-    elif "REQUIRE_VERIFICATION" in decisions:
+    elif scenario.operator_resolution == "rejected" and rejected:
+        result.outcome = "approval_rejected"
+    elif reviewed or (checks_verification and verified_effect):
+        result.outcome = "resolved"
+    elif "REQUIRE_VERIFICATION" in decisions or (checks_verification and verification_failed):
         result.outcome = "verification_required"
     elif "REQUIRE_APPROVAL" in decisions:
         result.outcome = "approval_pending"

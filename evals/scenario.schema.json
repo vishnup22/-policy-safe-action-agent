@@ -333,6 +333,55 @@
       "title": "EscalationPriority",
       "type": "string"
     },
+    "EventExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/EventType"
+        },
+        "count": {
+          "default": 1,
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "payload_match": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Payload Match",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "EventExpectation",
+      "type": "object"
+    },
+    "EventType": {
+      "enum": [
+        "conversation_started",
+        "user_message",
+        "agent_message",
+        "tool_call",
+        "tool_result",
+        "model_call",
+        "action_proposed",
+        "policy_decision",
+        "verification_requested",
+        "verification_completed",
+        "approval_requested",
+        "approval_resolved",
+        "action_executed",
+        "action_failed",
+        "follow_up_scheduled",
+        "follow_up_fired",
+        "conversation_ended"
+      ],
+      "title": "EventType",
+      "type": "string"
+    },
     "Expected": {
       "additionalProperties": false,
       "properties": {
@@ -342,7 +391,8 @@
             "denied",
             "escalated",
             "verification_required",
-            "approval_pending"
+            "approval_pending",
+            "approval_rejected"
           ],
           "title": "Outcome",
           "type": "string"
@@ -396,6 +446,14 @@
             ]
           },
           "title": "Executed Actions",
+          "type": "array"
+        },
+        "events": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EventExpectation"
+          },
+          "title": "Events",
           "type": "array"
         }
       },
@@ -1164,6 +1222,32 @@
       },
       "title": "Clock Advance",
       "type": "array"
+    },
+    "operator_resolution": {
+      "anyOf": [
+        {
+          "enum": [
+            "approved",
+            "rejected"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Operator Resolution"
+    },
+    "repeat_resolution": {
+      "default": false,
+      "title": "Repeat Resolution",
+      "type": "boolean"
+    },
+    "poll_follow_ups": {
+      "default": false,
+      "title": "Poll Follow Ups",
+      "type": "boolean"
     },
     "expected": {
       "$ref": "#/$defs/Expected"

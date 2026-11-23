@@ -13,11 +13,21 @@ from sqlalchemy.sql.dml import Delete, Insert, Update
 
 from evals.runner.facts import WorldFacts
 from psa.clock import Clock
-from psa.domain import ActionIntent, Decision, EventType
+from psa.domain import ActionIntent, Decision, DecisionOutcome, EventType
 from psa.policy import PolicyRegistry, SessionContext, decide
 from psa.seed import World
 from psa.store import CommerceRepo
-from psa.store.models import ConversationRow, CustomerRow, EventRow, OrderRow, StoreCreditRow
+from psa.store.models import (
+    ApprovalRow,
+    ApprovalStatus,
+    ConversationRow,
+    CustomerRow,
+    EventRow,
+    OrderRow,
+    StoreCreditRow,
+)
+
+EVAL_REVIEWER = "eval-operator"
 
 
 class ExecutionAudit:
@@ -29,10 +39,14 @@ class ExecutionAudit:
         clock: Clock,
         policy_set: str,
         version: Callable[[], str],
+        *,
+        allow_operator_approval: bool = False,
     ):
         self.sessions, self.world, self.registry = sessions, world, registry
         self.clock, self.policy_set, self.version = clock, policy_set, version
         self.decisions: dict[str, Decision] = {}
+        self.allow_operator_approval = allow_operator_approval
+        self.approved_executions: set[str] = set()
         self.intents: dict[str, ActionIntent] = {}
         self.snapshots: dict[int, dict[str, tuple[WorldFacts, SessionContext]]] = {}
 
@@ -88,13 +102,28 @@ class ExecutionAudit:
             if intent is None:
                 continue
             source, context = pending.get(intent.intent_id) or self.capture(db, intent)
-            self.decisions[row.event_id] = decide(
+            decision = decide(
                 intent,
                 self.registry.get(self.policy_set, self.version()),
                 source=source,
                 session=context,
                 clock=self.clock,
             )
+            self.decisions[row.event_id] = decision
+            if (
+                self.allow_operator_approval
+                and decision.outcome == DecisionOutcome.REQUIRE_APPROVAL
+            ):
+                approved = db.scalar(
+                    select(ApprovalRow.approval_id).where(
+                        ApprovalRow.conversation_id == intent.conversation_id,
+                        ApprovalRow.intent_id == intent.intent_id,
+                        ApprovalRow.status == ApprovalStatus.APPROVED,
+                        ApprovalRow.reviewer == EVAL_REVIEWER,
+                    )
+                )
+                if approved is not None:
+                    self.approved_executions.add(row.event_id)
             pending.clear()
 
     def before_execute(
