@@ -29,16 +29,30 @@ from psa.domain import (
     Decision,
     DecisionOutcome,
     EventType,
+    VerifyIdentityArgs,
 )
 from psa.executor import Executor, request_approval
 from psa.llm import LLMClient, ModelResponse, ToolCall, ToolOutput, ToolSpec
-from psa.policy import PolicySet, decide
+from psa.policy import PolicySet, SessionContext, decide
 from psa.store import EventLog
 from psa.tools import READ_TOOLS, ToolContext, ToolFailure
+from psa.verification import verify_identity
 
 from . import prompts
 from .loop import TurnState, run_turn
 from .schemas import ACTION_DESCRIPTIONS, args_schema
+
+_verify_schema = VerifyIdentityArgs.model_json_schema()
+_verify_schema.pop("title", None)
+VERIFY_TOOL = ToolSpec(
+    name="verify_identity",
+    description=(
+        "Verify the customer's identity for this conversation using the order id, the email "
+        "on the account and the order's shipping postal code, exactly as the customer gave "
+        "them. Call it when an action result says verification is required. Limited attempts."
+    ),
+    input_schema=_verify_schema,
+)
 
 _ARGS = TypeAdapter(ActionArgs)
 PROPOSE_ACTION = "propose_action"
@@ -105,7 +119,7 @@ class _AgentBase:
 
     # ---- shared
     def tools(self) -> list[ToolSpec]:
-        return [t.spec for t in READ_TOOLS.values()] + self.action_tools()
+        return [t.spec for t in READ_TOOLS.values()] + [VERIFY_TOOL] + self.action_tools()
 
     def run(self, transcript: list[Any]) -> TurnResultInternal:
         state = run_turn(
@@ -118,6 +132,24 @@ class _AgentBase:
             max_steps=self.max_steps,
         )
         return TurnResultInternal(state=state, pending_approval_id=self.pending_approval_id)
+
+    def _verify(self, args: VerifyIdentityArgs) -> dict[str, Any]:
+        """Same for both agents. Facts come from the system of record (psa.verification)."""
+        self.ctx.faults.before_call(VERIFY_TOOL.name)
+        try:
+            outcome = verify_identity(
+                self.ctx.db, self.conversation_id, args, clock=self.clock, log=self.log
+            )
+        except NotImplementedError as exc:  # until T6.2 (H2) lands
+            raise ToolFailure("unavailable", "identity verification isn't available yet") from exc
+        if outcome.verified:
+            # Later proposals in this same turn are decided with the verified identity.
+            self.ctx.session = SessionContext(
+                conversation_id=self.conversation_id,
+                customer_id=outcome.customer_id,
+                identity_verified=True,
+            )
+        return outcome.model_dump(mode="json")
 
     def _record_model_call(self, response: ModelResponse) -> None:
         self.log.append(
@@ -147,6 +179,8 @@ class _AgentBase:
                 tool = READ_TOOLS[call.name]
                 self.ctx.faults.before_call(call.name)
                 result = tool.run(self.ctx, tool.input_model.model_validate(call.arguments))
+            elif call.name == VERIFY_TOOL.name:
+                result = self._verify(VerifyIdentityArgs.model_validate(call.arguments))
             else:
                 result = self.dispatch_action(call)
         except ValidationError as exc:
