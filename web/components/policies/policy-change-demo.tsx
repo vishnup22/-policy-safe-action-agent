@@ -5,6 +5,7 @@ import { ArrowDownRight, ArrowUpRight, FlaskConical, Minus } from "lucide-react"
 import { ErrorState } from "@/components/page";
 import { GlassPanel } from "@/components/ui/glass";
 import { useEvalRun, useEvalRuns } from "@/lib/api/queries";
+import { useApi } from "@/lib/auth";
 import type { EvalRunReport, EvalRunSummary, SystemMetrics, SystemUnderTest } from "@/lib/api/types";
 import { runsForVersions } from "@/lib/policy-diff";
 import { cn, formatDateTime, formatPercent } from "@/lib/utils";
@@ -73,6 +74,7 @@ export function PolicyChangeDemo({ from, to }: { from: string; to: string }) {
   const before = useEvalRun(pair?.from?.run_id ?? "");
   const after = useEvalRun(pair?.to?.run_id ?? "");
   const loading = runs.isPending || (pair?.from && before.isPending) || (pair?.to && after.isPending);
+  const demo = useApi().mode === "mock";
 
   return (
     <GlassPanel as="section" aria-labelledby="policy-change-demo-heading" className="p-4 sm:p-6">
@@ -81,8 +83,16 @@ export function PolicyChangeDemo({ from, to }: { from: string; to: string }) {
           <FlaskConical aria-hidden className="size-4" />
         </span>
         <div>
-          <h2 id="policy-change-demo-heading" className="text-base font-semibold tracking-tight">
+          <h2 id="policy-change-demo-heading" className="flex items-center gap-2 text-base font-semibold tracking-tight">
             Policy change demo
+            {demo ? (
+              <span
+                className="rounded-full border border-violet-600/30 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase text-violet-800 dark:border-violet-300/30 dark:text-violet-200"
+                title="Mock mode: numbers come from the demo world, not a real eval run"
+              >
+                Demo data
+              </span>
+            ) : null}
           </h2>
           <p className="text-sm text-muted-foreground">
             The same scenarios against each version. The guarded agent picks up the new rule from the engine; the
