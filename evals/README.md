@@ -147,3 +147,19 @@ cost by successful trials. Zero denominators return 0. pass^k averages
 `C(successes,k)/C(trials,k)` per scenario; resumed/partial runs only publish k values
 supported by every included scenario. Trial counts and failure reasons remain in
 the report; no fake run is presented as baseline-versus-guarded performance.
+
+## Local API load check
+
+Run with Docker Postgres on port 5433. The CLI uses an echo runtime and a disposable
+schema. It sends API requests concurrently, checks each conversation's event
+sequence, and races two requests against one approval. It prints the p95 request
+latency and both approval responses as JSON.
+
+```powershell
+uv run python -m evals.load --conversations 16 --turns 3 --workers 8
+
+# Opt in to the corresponding pytest case.
+$env:RUN_LOAD = '1'
+uv run pytest tests/load -s
+Remove-Item Env:RUN_LOAD
+```

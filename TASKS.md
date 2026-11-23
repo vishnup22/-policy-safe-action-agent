@@ -313,7 +313,7 @@ Merged to `dev` **before** lanes G–I depend on it (H1 and I1 can start immedia
 - [ ] **H2 (T6.2) Identity verification service** — implement `psa.verification.verify_identity` exactly per its docstring contract; `db` tests for match / mismatch / lockout after 3 / no customer switch / events appended.
 - [ ] **H3 Policy diff endpoint** — `GET /api/policies/{policy_set}/diff` per `api.md` v0.2 (auth required, 404 unknown version); tests incl. v1 → v2 shows `REFUND_WINDOW` changed.
 - [ ] **H4 (T6.4) Scenarios → 150+** — +50 across verification (verify then refund; wrong postal code; lockout), approvals (approve / reject / double-resolve), follow-ups (fires after clock advance; out-of-range), faults, policy change; consistency test passes; regression suite stays ~25 IDs (add new categories only if needed).
-- [ ] **H5 (T7.3) Load test** — `tests/load/` (marked `load`, skipped by default) + `evals/load.py`: N concurrent conversations with `FakeRuntime` / scripted LLM; assert event-log `seq` has no gaps/duplicates per conversation, approval double-resolve returns exactly one 200 and one 409, p95 API latency reported.
+- [x] **H5 (T7.3) Load test** — `tests/load/` (marked `load`, skipped by default) + `evals/load.py`: N concurrent conversations with `FakeRuntime` / scripted LLM; assert event-log `seq` has no gaps/duplicates per conversation, approval double-resolve returns exactly one 200 and one 409, p95 API latency reported.
 
 ### Lane I — performance, policy diff UI, verification / approvals / follow-ups in the console · Cursor
 - [ ] **I1 (F5) Mobile Lighthouse ≥ 90** on `/` (simulated slow 4G, 4× CPU) without losing the design; report before/after.
