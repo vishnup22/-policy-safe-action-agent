@@ -120,6 +120,11 @@ export class LiveClient implements ApiClient {
     return this.request(s.PolicyDetailSchema, `/policies/${encodeURIComponent(policySet)}`);
   }
 
+  getPolicyDiff(policySet: string, { from, to }: { from: string; to: string }) {
+    const q = new URLSearchParams({ from, to });
+    return this.request(s.PolicyDiffSchema, `/policies/${encodeURIComponent(policySet)}/diff?${q}`);
+  }
+
   listEvalRuns(params: { limit?: number } = {}) {
     return this.request(s.EvalRunListSchema, `/evals/runs?limit=${params.limit ?? 20}`);
   }

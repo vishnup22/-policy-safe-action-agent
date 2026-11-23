@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   ClipboardCheck,
+  FileCode2,
   FlaskConical,
   History,
   LogOut,
@@ -27,6 +28,7 @@ const NAV = [
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/conversations", label: "Conversations", icon: History },
   { href: "/approvals", label: "Approvals", icon: ClipboardCheck },
+  { href: "/policies", label: "Policies", icon: FileCode2 },
   { href: "/evals", label: "Evals", icon: FlaskConical },
 ] as const;
 

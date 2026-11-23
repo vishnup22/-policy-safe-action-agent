@@ -183,6 +183,17 @@ describe("docs/contracts/api.md examples", () => {
         rules: [{ id: "REFUND_WINDOW", applies_to: ["issue_refund"], description: "string" }],
       }),
     ).toBeTruthy();
+    expect(
+      s.PolicyDiffSchema.parse({
+        policy_set: "larkspur-returns",
+        from_version: "2026.11.21-1",
+        to_version: "2026.11.21-2",
+        added: [{ id: "NEW_RULE", rule: {} }],
+        removed: [{ id: "OLD_RULE", rule: {} }],
+        changed: [{ id: "REFUND_WINDOW", before: {}, after: {} }],
+        unchanged: ["ORDER_EXISTS"],
+      }),
+    ).toBeTruthy();
   });
 
   it("evals", () => {

@@ -317,7 +317,8 @@ Merged to `dev` **before** lanes G–I depend on it (H1 and I1 can start immedia
 
 ### Lane I — performance, policy diff UI, verification / approvals / follow-ups in the console · Cursor
 - [ ] **I1 (F5) Mobile Lighthouse ≥ 90** on `/` (simulated slow 4G, 4× CPU) without losing the design; report before/after.
-- [ ] **I2 (T7.2) Policy diff view** — `/policies` (list) and `/policies/[set]/diff?from=&to=` against `api.md` v0.2: side-by-side rule diff (added / removed / changed with field-level highlights), version pickers, link from a policy decision's rule IDs. Mock-first (fixtures for v1 → v2), live once H3 merges. Plus a "policy change demo" panel: baseline vs guarded results by policy version from eval reports.
+- [x] **I2 (T7.2) Policy diff view** — `/policies` (list) and `/policies/[set]/diff?from=&to=` against `api.md` v0.2: side-by-side rule diff (added / removed / changed with field-level highlights), version pickers, link from a policy decision's rule IDs. Mock-first (fixtures for v1 → v2), live once H3 merges. Plus a "policy change demo" panel: baseline vs guarded results by policy version from eval reports.
+  - Status: mock fixtures transcribe all 22 v1 rules; v2 changes only REFUND_WINDOW (30 → 14 days). `LiveClient.getPolicyDiff` calls the contract endpoint; checking it against the real API waits for H3.
 - [ ] **I3 Verification + approvals + follow-ups in the UI** — chat and replay render `verification_requested` / `verification_completed` (verified badge on the conversation), approval resolution shows the executed result, replay timeline shows `follow_up_scheduled` / `follow_up_fired` with due time. Mock fixtures first.
 - [ ] **I4 Quality** — Vitest for new views; extend Playwright mock smoke (375 / 1440 px); `web/e2e/live.spec.ts` covers `/policies` diff when H3 is live.
 

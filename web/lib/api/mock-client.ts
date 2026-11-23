@@ -1,7 +1,7 @@
 import { ApiError, type ApiClient } from "./client";
 import { ConversationBuilder, DAY, MINUTE, iso, prng } from "./mock/builder";
 import { buildEvalRuns, summarizeRun } from "./mock/evals";
-import { MOCK_POLICY_DETAIL, MOCK_POLICY_SUMMARY } from "./mock/policies";
+import { MOCK_POLICY_DETAIL, MOCK_POLICY_SUMMARY, MOCK_POLICY_VERSIONS, diffMockPolicy } from "./mock/policies";
 import { buildSeed } from "./mock/seed";
 import { DEMO_CUSTOMERS, FALLBACK_REPLY, STORIES, routeStory } from "./mock/stories";
 import * as s from "./schemas";
@@ -205,7 +205,7 @@ export class MockClient implements ApiClient {
 
   async listPolicies() {
     await this.delay();
-    return s.PolicyListSchema.parse({ items: [MOCK_POLICY_SUMMARY] });
+    return s.PolicyListSchema.parse({ items: MOCK_POLICY_VERSIONS });
   }
 
   async getPolicy(policySet: string) {
@@ -214,6 +214,13 @@ export class MockClient implements ApiClient {
       throw new ApiError(404, "POLICY_NOT_FOUND", `Policy set ${policySet} not found`);
     }
     return s.PolicyDetailSchema.parse(MOCK_POLICY_DETAIL);
+  }
+
+  async getPolicyDiff(policySet: string, { from, to }: { from: string; to: string }) {
+    await this.delay();
+    const diff = diffMockPolicy(policySet, from, to);
+    if (!diff) throw new ApiError(404, "POLICY_NOT_FOUND", `Policy ${policySet} has no version ${from} or ${to}`);
+    return s.PolicyDiffSchema.parse(diff);
   }
 
   async listEvalRuns(params: { limit?: number } = {}) {

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { buildEvalRuns, summarizeRun } from "@/lib/api/mock/evals";
-import { MOCK_POLICY_DETAIL, MOCK_POLICY_SUMMARY } from "@/lib/api/mock/policies";
+import {
+  MOCK_POLICY_DETAIL,
+  MOCK_POLICY_SUMMARY,
+  MOCK_POLICY_VERSIONS,
+  POLICY_VERSION_V2,
+  diffMockPolicy,
+} from "@/lib/api/mock/policies";
 import { buildSeed } from "@/lib/api/mock/seed";
 import { INJECTED_NOTE } from "@/lib/api/mock/stories";
 import * as s from "@/lib/api/schemas";
@@ -94,14 +100,34 @@ describe("seed conversations", () => {
   it("policy fixtures validate", () => {
     expect(s.PolicyListSchema.parse({ items: [MOCK_POLICY_SUMMARY] }).items[0].rule_count).toBe(MOCK_POLICY_DETAIL.rules.length);
     expect(s.PolicyDetailSchema.parse(MOCK_POLICY_DETAIL)).toBeTruthy();
+    expect(s.PolicyListSchema.parse({ items: MOCK_POLICY_VERSIONS }).items.map((p) => p.version)).toEqual([
+      MOCK_POLICY_SUMMARY.version,
+      POLICY_VERSION_V2,
+    ]);
+  });
+
+  it("v1 → v2 differs only in REFUND_WINDOW, 30 → 14 days, like policies/larkspur-returns", () => {
+    const diff = s.PolicyDiffSchema.parse(diffMockPolicy("larkspur-returns", MOCK_POLICY_SUMMARY.version, POLICY_VERSION_V2));
+    expect(diff.changed.map((c) => c.id)).toEqual(["REFUND_WINDOW"]);
+    expect(diff.added).toEqual([]);
+    expect(diff.removed).toEqual([]);
+    expect(diff.unchanged).toHaveLength(MOCK_POLICY_DETAIL.rules.length - 1);
+    const [change] = diff.changed;
+    expect(change.before.when).toEqual({ fact: "order.days_since_delivery", op: "lte", value: 30 });
+    expect(change.after.when).toEqual({ fact: "order.days_since_delivery", op: "lte", value: 14 });
+  });
+
+  it("the policy diff is null for an unknown version or set", () => {
+    expect(diffMockPolicy("larkspur-returns", "2020.01.01-1", POLICY_VERSION_V2)).toBeNull();
+    expect(diffMockPolicy("other-set", MOCK_POLICY_SUMMARY.version, POLICY_VERSION_V2)).toBeNull();
   });
 });
 
 describe("eval run fixtures", () => {
   const runs = buildEvalRuns();
 
-  it("has two deterministic runs that validate", () => {
-    expect(runs).toHaveLength(2);
+  it("has deterministic runs on both policy versions that validate", () => {
+    expect(new Set(runs.map((r) => r.policy_version))).toEqual(new Set([MOCK_POLICY_SUMMARY.version, POLICY_VERSION_V2]));
     expect(JSON.stringify(buildEvalRuns())).toBe(JSON.stringify(runs));
     for (const r of runs) {
       s.EvalRunReportSchema.parse(r);

@@ -34,6 +34,7 @@ export class LazyClient implements ApiClient {
     this.resolve().then((c) => c.resolveApproval(...args));
   listPolicies: ApiClient["listPolicies"] = (...args) => this.resolve().then((c) => c.listPolicies(...args));
   getPolicy: ApiClient["getPolicy"] = (...args) => this.resolve().then((c) => c.getPolicy(...args));
+  getPolicyDiff: ApiClient["getPolicyDiff"] = (...args) => this.resolve().then((c) => c.getPolicyDiff(...args));
   listEvalRuns: ApiClient["listEvalRuns"] = (...args) => this.resolve().then((c) => c.listEvalRuns(...args));
   getEvalRun: ApiClient["getEvalRun"] = (...args) => this.resolve().then((c) => c.getEvalRun(...args));
 }

@@ -36,6 +36,9 @@ export type ResolveApprovalRequest = z.infer<typeof s.ResolveApprovalRequestSche
 export type PolicySummary = z.infer<typeof s.PolicySummarySchema>;
 export type PolicyList = z.infer<typeof s.PolicyListSchema>;
 export type PolicyDetail = z.infer<typeof s.PolicyDetailSchema>;
+export type PolicyRuleRef = z.infer<typeof s.PolicyRuleRefSchema>;
+export type PolicyRuleChange = z.infer<typeof s.PolicyRuleChangeSchema>;
+export type PolicyDiff = z.infer<typeof s.PolicyDiffSchema>;
 
 export type EvalRunSummary = z.infer<typeof s.EvalRunSummarySchema>;
 export type EvalRunList = z.infer<typeof s.EvalRunListSchema>;
