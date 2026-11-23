@@ -99,8 +99,8 @@ Payload shapes by type:
 | `action_failed` | `{ "intent_id": string, "error": string, "retryable": boolean, "attempt": number }` |
 | `follow_up_scheduled` | `{ "follow_up_id": string, "due_at": string, "note": string }` |
 | `follow_up_fired` | `{ "follow_up_id": string }` |
-| `verification_requested` | `{ "method": "email_and_postal_code", "order_id": string }` |
-| `verification_completed` | `{ "verified": boolean, "method": "email_and_postal_code", "customer_id": string \| null, "attempts_remaining": number }` |
+| `verification_requested` | `{ "intent_id": string, "reason_codes": string[] }` — appended by the guarded agent when policy returns REQUIRE_VERIFICATION |
+| `verification_completed` | `{ "verified": boolean, "method": "email_and_postal_code", "order_id": string, "customer_id": string \| null, "attempts_remaining": number }` — appended by `psa.verification.verify_identity` on every attempt |
 
 ### ActionIntent (`psa.domain.actions.ActionIntent`)
 ```json

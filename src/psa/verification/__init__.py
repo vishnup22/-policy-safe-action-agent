@@ -9,8 +9,11 @@ Contract (see `psa.domain.verification`):
   matches `args.postal_code` (case/space-insensitive). Facts come from the DB only.
 - At most `MAX_VERIFICATION_ATTEMPTS` failed attempts per conversation; after that it
   returns verified=False, attempts_remaining=0 without checking.
-- Appends `verification_requested` {method, order_id} then `verification_completed`
-  {verified, method, customer_id|null, attempts_remaining} to the event log.
+- Appends exactly one `verification_completed` event per attempt:
+  {verified, method, order_id, customer_id|null, attempts_remaining}. It does NOT append
+  `verification_requested` — the guarded agent already does that (payload
+  {intent_id, reason_codes}) when policy returns REQUIRE_VERIFICATION.
+- Counts failed attempts from this conversation's `verification_completed` events.
 - On success sets ConversationRow.customer_id and identity_verified=True. It never
   un-verifies and never switches an already-verified conversation to another customer
   (returns verified=False for a different customer).
