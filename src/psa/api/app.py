@@ -5,8 +5,9 @@ import hmac
 import json
 import re
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
+import yaml
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -292,6 +293,9 @@ def create_app(
             ]
         )
 
+    def policy_yaml(policy_set: str, version: str) -> str:
+        return (settings.policies_dir / policy_set / f"{version}.yaml").read_text(encoding="utf-8")
+
     @api.get("/policies/{policy_set}", response_model=m.PolicyDetail)
     def policy(policy_set: str) -> m.PolicyDetail:
         try:
@@ -305,13 +309,47 @@ def create_app(
         return m.PolicyDetail(
             policy_set=p.policy_set,
             version=p.version,
-            yaml=(settings.policies_dir / p.policy_set / f"{p.version}.yaml").read_text(
-                encoding="utf-8"
-            ),
+            yaml=policy_yaml(p.policy_set, p.version),
             rules=[
                 m.PolicyRule(id=r.id, applies_to=tuple(r.applies_to), description=r.description)
                 for r in p.rules
             ],
+        )
+
+    @api.get("/policies/{policy_set}/diff", response_model=m.PolicyDiff)
+    def policy_diff(
+        policy_set: str,
+        from_version: Annotated[str, Query(alias="from")],
+        to_version: Annotated[str, Query(alias="to")],
+    ) -> m.PolicyDiff:
+        def source_rules(version: str) -> dict[str, dict[str, Any]]:
+            policy = registry.get(policy_set, version)
+            raw = yaml.safe_load(policy_yaml(policy.policy_set, policy.version))
+            return {rule["id"]: rule for rule in raw["rules"]}
+
+        try:
+            before = source_rules(from_version)
+            after = source_rules(to_version)
+        except KeyError as error:
+            raise HTTPException(404, "Policy version not found") from error
+
+        common = sorted(before.keys() & after.keys())
+        return m.PolicyDiff(
+            policy_set=policy_set,
+            from_version=from_version,
+            to_version=to_version,
+            added=[
+                m.RuleRef(id=key, rule=after[key]) for key in sorted(after.keys() - before.keys())
+            ],
+            removed=[
+                m.RuleRef(id=key, rule=before[key]) for key in sorted(before.keys() - after.keys())
+            ],
+            changed=[
+                m.RuleChange(id=key, before=before[key], after=after[key])
+                for key in common
+                if before[key] != after[key]
+            ],
+            unchanged=[key for key in common if before[key] == after[key]],
         )
 
     def reports() -> list[EvalRunReport]:

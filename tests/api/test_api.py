@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from sqlalchemy.orm import Session, sessionmaker
@@ -11,6 +12,7 @@ from tests.api.fakes import PersistedFake
 
 from psa.api import Settings, create_app
 from psa.api.auth import issue, verify
+from psa.api.models import PolicyDiff
 from psa.clock import SimulatedClock
 from psa.domain import ActionIntent, Decision, DecisionOutcome, IssueRefundArgs
 from psa.seed import generate_world
@@ -137,6 +139,42 @@ def test_all_http_routes(sessions: sessionmaker[Session], tmp_path: Path) -> Non
         assert len(client.get("/api/approvals?status=rejected").json()["items"]) == 1
         clock.advance(timedelta(days=1))
         assert client.get("/api/conversations").status_code == 401
+
+
+def test_policy_diff_returns_raw_rules_and_requires_auth(tmp_path: Path) -> None:
+    config = settings(tmp_path)
+    app = create_app(
+        runtime_factory=PersistedFake,
+        sessions=sessionmaker(),
+        clock=SimulatedClock(NOW),
+        settings=config,
+    )
+    policy_set = "larkspur-returns"
+    first, second = "2026.11.21-1", "2026.11.21-2"
+    endpoint = f"/api/policies/{policy_set}/diff"
+    versions = {"from": first, "to": second}
+
+    def raw_window(version: str) -> dict[str, object]:
+        policy = (config.policies_dir / policy_set / f"{version}.yaml").read_text(encoding="utf-8")
+        return next(
+            rule for rule in yaml.safe_load(policy)["rules"] if rule["id"] == "REFUND_WINDOW"
+        )
+
+    with TestClient(app) as client:
+        assert client.get(endpoint, params=versions).status_code == 401
+        login = client.post("/api/auth/demo-login", json={"passcode": "test-passcode"})
+        client.headers["Authorization"] = "Bearer " + login.json()["token"]
+        response = client.get(endpoint, params=versions)
+        assert response.status_code == 200, response.text
+        diff = PolicyDiff.model_validate(response.json())
+        assert (diff.policy_set, diff.from_version, diff.to_version) == (policy_set, first, second)
+        window = next(rule for rule in diff.changed if rule.id == "REFUND_WINDOW")
+        assert window.before == raw_window(first)
+        assert window.after == raw_window(second)
+        assert "ORDER_EXISTS" in diff.unchanged
+        assert client.get(endpoint, params={"from": first, "to": "unknown"}).status_code == 404
+        assert client.get(endpoint, params={"from": "unknown", "to": second}).status_code == 404
+        assert client.get("/api/policies/unknown/diff", params=versions).status_code == 404
 
 
 def test_token_tampering_and_expiry() -> None:
