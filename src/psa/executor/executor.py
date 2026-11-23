@@ -21,7 +21,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from psa.clock import Clock
-from psa.domain import ActionIntent, EventType
+from psa.domain import ActionIntent, ActionName, EventType, ScheduleFollowUpArgs
 from psa.store import EventLog
 from psa.store.models import IdempotencyKeyRow, IdempotencyStatus
 from psa.tools.context import ToolContext
@@ -155,6 +155,19 @@ class Executor:
                     "result": result,
                 },
             )
+            if intent.action is ActionName.SCHEDULE_FOLLOW_UP:
+                args = intent.args
+                assert isinstance(args, ScheduleFollowUpArgs)
+                log.append(
+                    intent.conversation_id,
+                    EventType.FOLLOW_UP_SCHEDULED,
+                    at=self.clock.now(),
+                    payload={
+                        "follow_up_id": result["follow_up_id"],
+                        "due_at": result["due_at"],
+                        "note": args.note,
+                    },
+                )
             return ExecutionResult(ExecutionStatus.EXECUTED, result=result, attempts=attempt)
 
         assert failure is not None

@@ -153,6 +153,12 @@ def test_ticket_and_follow_up_execute(shop: Shop) -> None:
         ).all()
     assert len(follow_ups) == 1
     assert follow_ups[0].due_at == NOW + timedelta(hours=48)
+    (scheduled,) = of_type(turn.events, EventType.FOLLOW_UP_SCHEDULED)
+    assert scheduled.payload == {
+        "follow_up_id": follow_ups[0].follow_up_id,
+        "due_at": (NOW + timedelta(hours=48)).isoformat(),
+        "note": "check replacement",
+    }
 
 
 def test_partial_refund_sets_partially_refunded(shop: Shop) -> None:
