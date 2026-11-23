@@ -70,11 +70,13 @@ UPDATE_GOLDEN=1 uv run pytest tests/policy/test_golden.py  # only for intended p
 uv run python -m psa.runtime.demo [baseline]      # scripted end-to-end demo against Postgres
 uv run python -m psa.tools.mcp_server             # MCP server: read tools + propose_action
 uv run pytest -m llm                              # live LLM smoke tests (needs LLM_API_KEY, costs money)
-# planned — land with Day 2–4 tasks:
-docker compose -f infra/docker-compose.yml up   # full local stack
-uv run python -m evals.runner --suite regression          # fast PR subset
+uv run python -m psa.seed load --seed 42 --now 2026-11-21T12:00:00Z   # seed the world into DATABASE_URL
+uv run uvicorn psa.api.main:app --port 8000               # API on the real runtime (needs DEMO_PASSCODE, APP_AUTH_SECRET)
+uv run python -m evals.runner --suite regression          # real runtime + LLM simulator (calls models)
+uv run python -m evals.runner --suite regression --runtime fake   # offline harness check, no models
 uv run python -m evals.runner --suite full --trials 4     # nightly / pre-demo
-uv run python -m evals.runner --compare baseline guarded  # results table
+# planned:
+docker compose -f infra/docker-compose.yml up   # full local stack
 ```
 
 ## Working rules
