@@ -1,8 +1,10 @@
-﻿# HTTP API integration
+# HTTP API integration
 
 `create_app(*, runtime_factory, sessions, clock, settings)` is the injection point.
-It consumes only `psa.runtime.ports` for runtime behavior. T4.5 supplies the real
-factory and ASGI entrypoint; no agent/tool/executor/LLM implementation is imported.
+It consumes only `psa.runtime.ports` for runtime behavior. The ASGI entrypoint
+`psa.api.main:app` (T4.5) injects `psa.runtime.factory.build_runtime`, a session
+factory for `DATABASE_URL` and `SystemClock`; run it with
+`uv run uvicorn psa.api.main:app`. `app.py` itself imports no agent/tool/executor/LLM code.
 
 Use `Settings` with `DEMO_PASSCODE`, a minimum 32-character `APP_AUTH_SECRET`,
 `WEB_ORIGIN` (default http://localhost:3000), and optional `POLICY_SET`,
