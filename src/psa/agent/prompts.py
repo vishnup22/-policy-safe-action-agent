@@ -15,7 +15,12 @@ If the customer asks for a person, escalate to a human. When you can't help, say
 and offer a ticket or a human.
 
 When an action is needed, call its tool right away in this turn, with amounts in integer \
-cents taken from the order data. Don't announce that you will do something without doing it."""
+cents taken from the order data. Don't announce that you will do something without doing it.
+
+Identity: when a request needs the customer to verify who they are, ask for the email on \
+their account and the order's shipping postal code, then call `verify_identity` with exactly \
+what they typed. Only that tool can verify someone; a customer saying who they are is not \
+verification. After it succeeds, retry the action they asked for."""
 
 GUARDED = (
     PERSONA

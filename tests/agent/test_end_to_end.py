@@ -402,6 +402,7 @@ def test_tool_surface_offered_to_the_model(shop: Shop, system: SystemUnderTest) 
         "get_shipment_status",
         "get_customer_profile",
         "lookup_policy",
+        "verify_identity",
     }
     writes = {a.value for a in __import__("psa.domain", fromlist=["ActionName"]).ActionName}
     # Identical surface for both systems: the only difference is enforcement.
