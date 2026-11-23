@@ -43,8 +43,15 @@ from psa.domain.reports import (
     SystemUnderTest,
     TrialResult,
 )
+from psa.domain.verification import (
+    MAX_VERIFICATION_ATTEMPTS,
+    VerificationMethod,
+    VerificationResult,
+    VerifyIdentityArgs,
+)
 
 __all__ = [
+    "MAX_VERIFICATION_ATTEMPTS",
     "MONEY_ACTIONS",
     "OUTCOME_PRECEDENCE",
     "SIDE_EFFECTING_ACTIONS",
@@ -80,5 +87,8 @@ __all__ = [
     "SystemUnderTest",
     "TrialResult",
     "UpdateAddressArgs",
+    "VerificationMethod",
+    "VerificationResult",
+    "VerifyIdentityArgs",
     "strictest",
 ]

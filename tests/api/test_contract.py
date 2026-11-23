@@ -39,10 +39,11 @@ def test_every_document_example() -> None:
         m.ResolveRequest,
         m.Policies,
         m.PolicyDetail,
+        m.PolicyDiff,
         m.Runs,
         m.Health,
     ]
-    assert len(examples) == len(models) == 17
+    assert len(examples) == len(models) == 18
     intent = examples[9]
     decision = copy.deepcopy(examples[10])
     decision["outcome"] = "REQUIRE_APPROVAL"

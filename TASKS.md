@@ -272,25 +272,53 @@ Absorbs former T2.2, T3.4, T4.2–T4.4. Goal: the API the console talks to and t
 - **Owner prerequisites:** owner OK to run models again; local Ollama `qwen2.5:14b` in `.env` (`LLM_*`, `SIM_LLM_*`, free); optional Stripe test key (otherwise `stripe-sim`); `--max-cost-usd` only matters for hosted providers.
 
 
-## Day 5 — Faults & regression gate
-- [ ] **T5.1** Fault injection wired into tool layer (timeouts, 5xx, declines, rate limits) — Codex · `eval/t5-1-fault-injection`
-- [ ] **T5.2** Regression suite + accepted-baseline snapshot — Claude Code · `eval/t5-2-regression-suite`
-- [ ] **T5.3** CI policy-regression gate (fails on new unauthorized action / success drop) — Claude Code · `ci/t5-3-regression-gate`
-- [ ] **T5.4** Demo PR: refund window 30 → 14 days shows behavior diff — Claude Code · `feat/t5-4-policy-change-demo`
-- **Exit:** CI fails on an injected violation
+## Days 5–7 — Three parallel lanes (G · H · I)
 
-## Day 6 — Approvals, verification, long-running follow-ups
-- [ ] **T6.1** Approval flow end-to-end (REQUIRE_APPROVAL → queue → resolve → execute) — Claude Code · `feat/t6-1-approvals`
-- [ ] **T6.2** Identity verification flow (REQUIRE_VERIFICATION) — Codex · `feat/t6-2-verification`
-- [ ] **T6.3** Durable scheduler + simulated clock for follow-ups — Claude Code · `feat/t6-3-scheduler`
-- [ ] **T6.4** Expand scenarios to 150+ — Codex · `eval/t6-4-scenarios-150`
-- **Exit:** follow-up survives a restart
+### T5.0 Contracts for Days 5–7 — Claude Code · `chore/t5-0-lane-plan` ✅
+Merged to `dev` **before** lanes G–I depend on it (H1 and I1 can start immediately; they don't need it).
+- [x] Identity verification contract: `src/psa/domain/verification.py` (`VerifyIdentityArgs`, `VerificationResult`, `VerificationMethod`, `MAX_VERIFICATION_ATTEMPTS`) + service stub `src/psa/verification/__init__.py` (signature and rules in its docstring)
+- [x] API contract v0.2: `GET /api/policies/{policy_set}/diff?from=&to=` (+ `PolicyDiff` response model, contract test) and payload shapes for `verification_requested` / `verification_completed`
 
-## Day 7 — Hardening & UX polish
-- [ ] **T7.1** Prompt + agent tuning driven by eval failures (no scenario edits) — Claude Code · `fix/t7-1-agent-tuning`
-- [ ] **T7.2** Policy diff view + policy-change demo in UI — Cursor · `ui/t7-2-policy-diff`
-- [ ] **T7.3** Load test: concurrent conversations, event-log contention — Codex · `test/t7-3-load`
-- **Exit:** false-refusal rate within target
+### Lane rules (G, H, I)
+1. Branch from latest `dev`, one branch per task ID (`<prefix>/t<day>-<n>-<name>`); PR into `dev`; squash-merge. Each lane edits **only its own section** of this file.
+2. Write only inside your owned paths (table). Read anything.
+3. **Frozen:** `src/psa/domain/`, `src/psa/runtime/ports.py`, `docs/contracts/api.md`. Need a change? Describe it in your PR; Lane G merges contract changes separately.
+4. Only Lane G edits `pyproject.toml`, `uv.lock`, `alembic/`, `.github/workflows/`. Lane H: list needed packages / migrations in your PR.
+5. **Never edit a scenario's expected outcome or forbidden actions to make a run pass** (CLAUDE.md). If a scenario looks wrong, say why in the PR.
+6. No paid APIs. Real-model runs use local Ollama (`qwen2.5:14b`); tests use `psa.llm.scripted` / `FakeRuntime`, never a live model.
+7. Gates — Python: `uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest` (Docker Postgres on 5433 so `db` tests run). Web (from `web/`): `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
+
+| Lane | Tool | Worktree | Owns (write) |
+|---|---|---|---|
+| G | Claude Code | `psa-lane-g-claude\` | `src/psa/{agent,runtime,executor,llm,policy,store,scheduler}/` (not `ports.py`), `src/psa/tools/` (not `faults.py`, `errors.py`), `policies/`, `alembic/`, `evals/runner/{compare,gate}.py`, `evals/baselines/`, `evals/simulator/`, `.github/workflows/`, `pyproject.toml`, `uv.lock`, matching `tests/` |
+| H | Codex | `psa-lane-b-codex\` | `src/psa/tools/{faults,errors}.py`, `src/psa/verification/`, `src/psa/api/`, `src/psa/seed/`, `evals/` (not `simulator/`, `runner/{compare,gate}.py`, `baselines/`), `tests/{tools/test_fault*,verification,api,seed,evals,load}/` |
+| I | Cursor | `psa-lane-c-cursor\` | `web/` only |
+
+**Dependencies:** G1 needs the T4.5 report · G6 needs H2 · I2 live mode needs H3 · I3 live mode needs G6 · H4 approval/follow-up scenarios assume G4/G5 behavior described below.
+
+---
+
+### Lane G — regression gate, approvals, scheduler, tuning · Claude Code
+- [ ] **G1 (T5.2) Accepted baseline** — `evals/baselines/regression.json` from the T4.5 run; `uv run python -m evals.runner.compare <report> [--baseline evals/baselines/regression.json]` prints the per-system / per-category diff table.
+- [ ] **G2 (T5.3) CI policy-regression gate** — `evals/runner/gate.py`: fails on any new unauthorized action, any guarded scenario regressing pass→fail, or task-success drop > 5 pts. CI job runs the gate on a deterministic replay (scripted LLM transcripts), no live model. **Exit: CI fails on an injected violation** (demo branch).
+- [ ] **G3 (T5.4) Policy-change demo** — PR switching the refund window 30 → 14 days (policy v2 as default) with the gate output and behavior diff in the PR body.
+- [ ] **G4 (T6.1) Approvals end-to-end** — REQUIRE_APPROVAL → queue → API resolve → executor runs the stored intent exactly once (idempotency key from the intent) → agent tells the customer on the next turn; rejection path too. Tests: restart between request and resolve.
+- [ ] **G5 (T6.3) Durable scheduler** — `src/psa/scheduler/`: polls `follow_ups` due at `clock.now()`, claims with `FOR UPDATE SKIP LOCKED`, appends `follow_up_fired` exactly once, runs the follow-up turn; works with `SimulatedClock`; `uv run python -m psa.scheduler` worker. **Exit: a follow-up survives a process restart** (test).
+- [ ] **G6 Verification in the agents** — register `verify_identity` (read-only tool backed by H2) for baseline and guarded with the same tool surface; prompts updated.
+- [ ] **G7 (T7.1) Agent tuning from eval failures** — prompt/agent fixes only, no scenario edits; before/after regression numbers in the PR. **Exit: false-refusal rate within target.**
+
+### Lane H — faults, verification, policy diff API, scenarios, load · Codex
+- [ ] **H1 (T5.1) Fault injection** — finish the matrix in `src/psa/tools/faults.py` / `errors.py`: timeouts, 5xx, card declines, rate limits on every write tool and the payments gateway; retryable vs terminal mapping; `action_failed` events with `retryable` / `attempt`. Tests prove retries never duplicate effects (idempotency) and declines are never retried. If the executor needs a change, describe it in the PR (Lane G owns it). ≥ 15 fault scenarios under `evals/scenarios/faults/` (or the existing category).
+- [ ] **H2 (T6.2) Identity verification service** — implement `psa.verification.verify_identity` exactly per its docstring contract; `db` tests for match / mismatch / lockout after 3 / no customer switch / events appended.
+- [ ] **H3 Policy diff endpoint** — `GET /api/policies/{policy_set}/diff` per `api.md` v0.2 (auth required, 404 unknown version); tests incl. v1 → v2 shows `REFUND_WINDOW` changed.
+- [ ] **H4 (T6.4) Scenarios → 150+** — +50 across verification (verify then refund; wrong postal code; lockout), approvals (approve / reject / double-resolve), follow-ups (fires after clock advance; out-of-range), faults, policy change; consistency test passes; regression suite stays ~25 IDs (add new categories only if needed).
+- [ ] **H5 (T7.3) Load test** — `tests/load/` (marked `load`, skipped by default) + `evals/load.py`: N concurrent conversations with `FakeRuntime` / scripted LLM; assert event-log `seq` has no gaps/duplicates per conversation, approval double-resolve returns exactly one 200 and one 409, p95 API latency reported.
+
+### Lane I — performance, policy diff UI, verification / approvals / follow-ups in the console · Cursor
+- [ ] **I1 (F5) Mobile Lighthouse ≥ 90** on `/` (simulated slow 4G, 4× CPU) without losing the design; report before/after.
+- [ ] **I2 (T7.2) Policy diff view** — `/policies` (list) and `/policies/[set]/diff?from=&to=` against `api.md` v0.2: side-by-side rule diff (added / removed / changed with field-level highlights), version pickers, link from a policy decision's rule IDs. Mock-first (fixtures for v1 → v2), live once H3 merges. Plus a "policy change demo" panel: baseline vs guarded results by policy version from eval reports.
+- [ ] **I3 Verification + approvals + follow-ups in the UI** — chat and replay render `verification_requested` / `verification_completed` (verified badge on the conversation), approval resolution shows the executed result, replay timeline shows `follow_up_scheduled` / `follow_up_fired` with due time. Mock fixtures first.
+- [ ] **I4 Quality** — Vitest for new views; extend Playwright mock smoke (375 / 1440 px); `web/e2e/live.spec.ts` covers `/policies` diff when H3 is live.
 
 ## Day 8 — Observability & cost
 - [ ] **T8.1** OpenTelemetry + LangSmith tracing; cost per conversation in events — Claude Code · `feat/t8-1-observability`

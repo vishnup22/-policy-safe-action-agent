@@ -1,7 +1,7 @@
 """HTTP-only schemas; domain objects retain their frozen shared contracts."""
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -107,6 +107,27 @@ class PolicyDetail(Model):
     version: str
     yaml: str
     rules: list[PolicyRule]
+
+
+class RuleRef(Model):
+    id: str
+    rule: dict[str, Any]
+
+
+class RuleChange(Model):
+    id: str
+    before: dict[str, Any]
+    after: dict[str, Any]
+
+
+class PolicyDiff(Model):
+    policy_set: str
+    from_version: str
+    to_version: str
+    added: list[RuleRef]
+    removed: list[RuleRef]
+    changed: list[RuleChange]
+    unchanged: list[str]
 
 
 class Headline(Model):
