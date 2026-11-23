@@ -4,14 +4,22 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { createApiClient, type ApiClient } from "@/lib/api";
+import type { ApiClient } from "@/lib/api/client";
+import { createApiClient } from "@/lib/api/config";
 
 const STORAGE_KEY = "psa.session";
+const UNAUTHORIZED_EVENT = "psa:unauthorized";
+
+/** Called when the API answers 401: the session is dropped and guarded pages bounce to /login. */
+export function notifyUnauthorized() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+}
 
 interface Session {
   token: string;
@@ -65,6 +73,8 @@ interface AuthValue {
   token: string | null;
   /** False during SSR / before the session has been read on the client. */
   ready: boolean;
+  /** True after the API rejected the stored token, until the next successful login. */
+  sessionExpired: boolean;
   login: (passcode: string) => Promise<void>;
   logout: () => void;
 }
@@ -83,10 +93,22 @@ export function AuthProvider({ children, client }: { children: ReactNode; client
     () => undefined,
   );
   const ready = session !== undefined;
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  useEffect(() => {
+    function onUnauthorized() {
+      if (!store.read()) return;
+      setSessionExpired(true);
+      store.write(null);
+    }
+    window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
+  }, [store]);
 
   const login = useCallback(
     async (passcode: string) => {
       const res = await api.login(passcode);
+      setSessionExpired(false);
       store.write({ token: res.token, expires_at: res.expires_at });
     },
     [api, store],
@@ -95,8 +117,8 @@ export function AuthProvider({ children, client }: { children: ReactNode; client
   const logout = useCallback(() => store.write(null), [store]);
 
   const value = useMemo<AuthValue>(
-    () => ({ client: api, token: session?.token ?? null, ready, login, logout }),
-    [api, session, ready, login, logout],
+    () => ({ client: api, token: session?.token ?? null, ready, sessionExpired, login, logout }),
+    [api, session, ready, sessionExpired, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

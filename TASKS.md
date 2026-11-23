@@ -244,21 +244,23 @@ Absorbs former T2.2, T3.4, T4.2–T4.4. Goal: the API the console talks to and t
 ### Lane F — Finish console, then "Liquid Glass" redesign + pitch landing page · Cursor
 **F0 first, on the existing branch `ui/t1-c-web-console`:** finish Lane C — `pnpm lint` (1 error), `pnpm test` and `pnpm build` currently fail. Make the gate green, tick Lane C boxes, open the PR into `dev`. Then cut `ui/t2-f-liquid-glass-console` from the updated `dev`.
 
-- [ ] **F0 Finish Lane C** (see above) — PR merged
-- [ ] **F1 Design system** (`web/components/ui/glass/`, `web/lib/motion.ts`, tokens in Tailwind config)
+- [x] **F0 Finish Lane C** (see above) — PR merged
+- [x] **F1 Design system** (`web/components/ui/glass/`, `web/lib/motion.ts`, tokens in Tailwind config)
   - Deep obsidian canvas (`#050507`/`#0A0A0C`) with slow ambient aurora mesh (indigo, slate blue, soft cyan) behind content; text `#F5F5F7` / `#86868B`, tight display tracking.
   - Glass surfaces: `bg-white/[0.04–0.08]`, `backdrop-blur-2xl`, `backdrop-saturate-150`, 1px specular edge `border-white/[0.12]`, inset top highlight + soft drop shadow; hover border brighten + cursor-tracking spotlight.
   - Framer Motion presets: spring `{ stiffness: 300, damping: 30 }`; blur-fade-in on scroll. Lucide icons.
   - **Guardrails:** "inspired by" only — no Apple logos, product names, trademarks or SF Pro (use Inter or Geist). Respect `prefers-reduced-motion` (disable aurora drift, springs → fades). WCAG AA text contrast on glass. Cap stacked `backdrop-blur` layers (≤3 on screen) for performance; aurora via CSS/GPU transforms, not per-frame JS.
-- [ ] **F2 Pitch landing page** (`/`) — the page hiring managers open from outreach
+- [x] **F2 Pitch landing page** (`/`) — the page hiring managers open from outreach
   - Floating pill navbar (Dynamic-Island style, `layoutId` active pill). Hero: badge pill ("Policy-safe agents"), headline e.g. "Agents that can act — and can't break policy", subtle gradient shimmer, glass CTAs (Open console · View on GitHub).
   - Bento grid: propose → decide → execute architecture diagram; **baseline vs guarded results** (unauthorized-action rate, task success, false refusals) from the latest eval run; pass^k chart; replay timeline preview; policy-as-code YAML snippet; approvals queue preview.
   - Minimal glass dock-style footer. Numbers come from the API (`/api/evals/runs`) with mock fallback — never hardcoded.
-- [ ] **F3 Console restyle** — every Lane C page (chat, conversations/replay, approvals, evals, login) moved onto the glass system with spring page/tab transitions. Decision badges keep distinct semantic colors + icons (no harsh neon; never color-only).
+- [x] **F3 Console restyle** — every Lane C page (chat, conversations/replay, approvals, evals, login) moved onto the glass system with spring page/tab transitions. Decision badges keep distinct semantic colors + icons (no harsh neon; never color-only).
 - [ ] **F4 Live mode** — `LiveClient` against Lane E's API once merged (`NEXT_PUBLIC_API_MODE=live`); loading / empty / error states everywhere; handle 401 → login. Add the new reason codes `ITEM_NOT_IN_ORDER`, `FOLLOW_UP_OUT_OF_RANGE` to the Zod schemas.
+  - *Status:* reason codes, 401 → login, loading / empty / error states and landing live-with-mock-fallback are done; verification against Lane E's API is pending its merge.
 - [ ] **F5 Quality**
   - Vitest for glass primitives and reduced-motion behavior; Playwright smoke (landing + every console page in mock mode, 375 px and 1440 px).
   - Lighthouse on `/`: Performance ≥ 90, Accessibility ≥ 95.
+  - *Status:* Vitest and Playwright smoke done. Lighthouse on `/`: desktop Performance 100 / Accessibility 100; mobile (simulated slow 4G, 4× CPU) Performance 86–89 / Accessibility 100.
 - **Acceptance:** web gate green; landing + console fully usable in mock mode; live mode works against the local API after Lane E merges; zero changes outside `web/`.
 
 ---

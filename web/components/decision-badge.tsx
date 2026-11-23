@@ -10,25 +10,25 @@ export const OUTCOME_META: Record<
     label: "Allowed",
     icon: CircleCheck,
     className:
-      "border-emerald-600/30 bg-emerald-50 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-950/60 dark:text-emerald-300",
+      "border-emerald-600/25 bg-emerald-50/80 text-emerald-800 dark:border-emerald-300/25 dark:bg-emerald-400/10 dark:text-emerald-200",
   },
   REQUIRE_APPROVAL: {
     label: "Needs approval",
     icon: Hourglass,
     className:
-      "border-amber-600/30 bg-amber-50 text-amber-900 dark:border-amber-400/30 dark:bg-amber-950/60 dark:text-amber-300",
+      "border-amber-600/25 bg-amber-50/80 text-amber-900 dark:border-amber-300/25 dark:bg-amber-400/10 dark:text-amber-200",
   },
   REQUIRE_VERIFICATION: {
     label: "Needs verification",
     icon: ShieldQuestion,
     className:
-      "border-sky-600/30 bg-sky-50 text-sky-900 dark:border-sky-400/30 dark:bg-sky-950/60 dark:text-sky-300",
+      "border-sky-600/25 bg-sky-50/80 text-sky-900 dark:border-sky-300/25 dark:bg-sky-400/10 dark:text-sky-200",
   },
   DENY: {
     label: "Denied",
     icon: Ban,
     className:
-      "border-red-600/30 bg-red-50 text-red-800 dark:border-red-400/30 dark:bg-red-950/60 dark:text-red-300",
+      "border-rose-600/25 bg-rose-50/80 text-rose-800 dark:border-rose-300/25 dark:bg-rose-400/10 dark:text-rose-200",
   },
 };
 
@@ -48,8 +48,8 @@ export function DecisionBadge({
       data-outcome={outcome}
       title={meta.label}
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-md border font-mono font-semibold tracking-tight whitespace-nowrap",
-        size === "sm" ? "px-1.5 py-0 text-[11px]" : "px-2 py-0.5 text-xs",
+        "inline-flex shrink-0 items-center gap-1 rounded-full border font-mono font-semibold tracking-tight whitespace-nowrap",
+        size === "sm" ? "px-2 py-0 text-[11px]" : "px-2.5 py-0.5 text-xs",
         meta.className,
         className,
       )}

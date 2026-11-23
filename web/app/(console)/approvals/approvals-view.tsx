@@ -18,13 +18,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { glassVariants, SegmentedTabs } from "@/components/ui/glass";
 import { Textarea } from "@/components/ui/textarea";
 import type { Approval, ApprovalResolution, ApprovalStatus } from "@/lib/api/types";
 import { useApprovals, useResolveApproval } from "@/lib/api/queries";
 import { decidingRules } from "@/lib/decisions";
 import { ACTION_LABELS, describeArgs } from "@/lib/events";
-import { formatDateTime } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 
 const TABS: Array<{ value: ApprovalStatus; label: string }> = [
   { value: "pending", label: "Pending" },
@@ -38,8 +38,8 @@ function ResolutionBadge({ status }: { status: ApprovalStatus }) {
     <span
       className={
         status === "approved"
-          ? "inline-flex items-center gap-1 rounded-md border border-emerald-600/30 px-1.5 text-[11px] font-semibold text-emerald-800 uppercase dark:text-emerald-300"
-          : "inline-flex items-center gap-1 rounded-md border border-red-600/30 px-1.5 text-[11px] font-semibold text-red-800 uppercase dark:text-red-300"
+          ? "inline-flex items-center gap-1 rounded-full border border-emerald-600/30 px-2 text-[11px] font-semibold text-emerald-800 uppercase dark:border-emerald-300/30 dark:text-emerald-200"
+          : "inline-flex items-center gap-1 rounded-full border border-rose-600/30 px-2 text-[11px] font-semibold text-rose-800 uppercase dark:border-rose-300/30 dark:text-rose-200"
       }
     >
       {status === "approved" ? <Check aria-hidden className="size-3" /> : <X aria-hidden className="size-3" />}
@@ -81,7 +81,7 @@ export function ApprovalDrawer({
               </SheetDescription>
             </SheetHeader>
 
-            <div className="space-y-4 px-4 text-sm">
+            <div className="space-y-5 px-5 text-sm">
               <div className="flex flex-wrap items-center gap-2">
                 <ResolutionBadge status={approval.status} />
                 <Link
@@ -95,7 +95,7 @@ export function ApprovalDrawer({
 
               <section>
                 <h3 className="mb-1 text-xs font-medium text-muted-foreground uppercase">Intent</h3>
-                <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 rounded-lg border p-3 font-mono text-xs">
+                <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 rounded-xl border border-glass-edge bg-glass-inset p-3 font-mono text-xs">
                   {Object.entries(approval.intent.args).map(([k, v]) => (
                     <div key={k} className="contents">
                       <dt className="text-muted-foreground">{k}</dt>
@@ -125,7 +125,7 @@ export function ApprovalDrawer({
               </section>
 
               {approval.status !== "pending" && (
-                <section className="rounded-lg border p-3 text-xs">
+                <section className="rounded-xl border border-glass-edge bg-glass-inset p-3 text-xs">
                   <p>
                     <span className="font-medium capitalize">{approval.status}</span> by {approval.reviewer ?? "—"}
                     {approval.resolved_at && <> on {formatDateTime(approval.resolved_at)} UTC</>}
@@ -194,16 +194,21 @@ export function ApprovalsView() {
         description="Actions the policy engine marked REQUIRE_APPROVAL wait here for a human decision."
       />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as ApprovalStatus)} className="mb-4">
-        <TabsList>
-          {TABS.map((t) => (
-            <TabsTrigger key={t.value} value={t.value} className="px-3">
+      <SegmentedTabs
+        value={tab}
+        onValueChange={setTab}
+        layoutId="approvals-tab"
+        className="mb-5"
+        items={TABS.map((t) => ({
+          value: t.value,
+          label: (
+            <>
               {t.label}
               <span className="ml-1 rounded-full bg-foreground/10 px-1.5 text-[11px] tabular-nums">{counts[t.value]}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+            </>
+          ),
+        }))}
+      />
 
       {isPending ? (
         <LoadingState />
@@ -220,7 +225,10 @@ export function ApprovalsView() {
                 <button
                   type="button"
                   onClick={() => setSelected(a)}
-                  className="flex w-full flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
+                  className={cn(
+                    glassVariants({ radius: "2xl", interactive: true }),
+                    "flex w-full flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-4 text-left hover:bg-glass-strong focus-visible:outline-2 focus-visible:outline-ring",
+                  )}
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium">
@@ -234,7 +242,7 @@ export function ApprovalsView() {
                   <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     {deciding.map((r) =>
                       r.reason_code ? (
-                        <code key={r.rule_id} className="rounded border px-1.5 py-0.5 font-mono">
+                        <code key={r.rule_id} className="rounded-md border px-1.5 py-0.5 font-mono">
                           {r.reason_code}
                         </code>
                       ) : null,

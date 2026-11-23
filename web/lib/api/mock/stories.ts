@@ -167,9 +167,9 @@ function refundRules(days: number, amount: number, refundable: number): RuleResu
   );
   rules.push(
     amount <= refundable
-      ? rule("REFUND_AMOUNT", "ALLOW", `${formatCents(amount)} is within the ${formatCents(refundable)} refundable`)
+      ? rule("REFUND_AMOUNT_LIMIT", "ALLOW", `${formatCents(amount)} is within the ${formatCents(refundable)} refundable`)
       : rule(
-          "REFUND_AMOUNT",
+          "REFUND_AMOUNT_LIMIT",
           "DENY",
           `Requested ${formatCents(amount)}; only ${formatCents(refundable)} is refundable`,
           "AMOUNT_EXCEEDS_REFUNDABLE",
@@ -177,15 +177,17 @@ function refundRules(days: number, amount: number, refundable: number): RuleResu
   );
   rules.push(
     amount <= 20000
-      ? rule("HIGH_VALUE_REFUND", "ALLOW", `${formatCents(amount)} is under the $200.00 approval threshold`)
+      ? rule("REFUND_HIGH_VALUE", "ALLOW", `${formatCents(amount)} is under the $200.00 approval threshold`)
       : rule(
-          "HIGH_VALUE_REFUND",
+          "REFUND_HIGH_VALUE",
           "REQUIRE_APPROVAL",
           `${formatCents(amount)} exceeds the $200.00 auto-approval limit`,
           "HIGH_VALUE_REFUND",
         ),
   );
-  rules.push(rule("NON_REFUNDABLE_ITEMS", "ALLOW", "No final-sale items or gift cards in this refund"));
+  rules.push(rule("REFUND_ITEMS_IN_ORDER", "ALLOW", "Every refunded item belongs to this order"));
+  rules.push(rule("REFUND_FINAL_SALE", "ALLOW", "No final-sale items in this refund"));
+  rules.push(rule("REFUND_GIFT_CARD", "ALLOW", "No gift cards in this refund"));
   return rules;
 }
 
@@ -437,7 +439,7 @@ export function followUp(
     ctx.customerId,
     "Shipment has had no scan for 4 days",
   );
-  const rules = [rule("FOLLOW_UP_ALLOWED", "ALLOW", "Follow-ups are always allowed")];
+  const rules = [rule("FOLLOW_UP_WINDOW", "ALLOW", "Due in 48 hours; within the 1 hour – 14 day window")];
   if (orderId) rules.push(rule("ORDER_OWNERSHIP", "ALLOW", "Order belongs to the session customer"));
   b.decide(intent, rules, {
     "session.identity_verified": Boolean(ctx.customerId),

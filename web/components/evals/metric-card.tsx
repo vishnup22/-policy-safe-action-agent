@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { GlassPanel } from "@/components/ui/glass";
 import type { SystemMetrics } from "@/lib/api/types";
 import { cn, formatPercent } from "@/lib/utils";
 
@@ -44,16 +45,17 @@ export function MetricCard({
   const emphasis = def.key === "unauthorized_action_rate";
 
   return (
-    <section
+    <GlassPanel
+      as="section"
       aria-label={def.label}
-      className={cn("rounded-xl border bg-card p-4", emphasis && "border-emerald-600/40 ring-1 ring-emerald-600/20")}
+      className={cn("p-5", emphasis && "border-emerald-600/40 dark:border-emerald-300/30")}
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-medium">{def.label}</h3>
         <span
           className={cn(
-            "rounded border px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap uppercase",
-            def.better === "lower" ? "border-sky-600/40 text-sky-800 dark:text-sky-300" : "text-muted-foreground",
+            "rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap uppercase",
+            def.better === "lower" ? "border-sky-600/40 text-sky-800 dark:border-sky-300/30 dark:text-sky-200" : "text-muted-foreground",
           )}
         >
           {def.better === "lower" ? "↓ lower is better" : "↑ higher is better"}
@@ -66,18 +68,18 @@ export function MetricCard({
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Guarded</dt>
-          <dd className="text-2xl font-semibold tabular-nums">{def.format(g)}</dd>
+          <dd className="text-3xl font-semibold tracking-tight tabular-nums">{def.format(g)}</dd>
         </div>
       </dl>
       <p
         className={cn(
           "mt-2 flex items-center gap-1 text-xs",
-          same ? "text-muted-foreground" : improved ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400",
+          same ? "text-muted-foreground" : improved ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300",
         )}
       >
         <DeltaIcon aria-hidden className="size-3.5" />
         {same ? "No change" : `${def.format(Math.abs(diff))} ${improved ? "better" : "worse"} than baseline`}
       </p>
-    </section>
+    </GlassPanel>
   );
 }

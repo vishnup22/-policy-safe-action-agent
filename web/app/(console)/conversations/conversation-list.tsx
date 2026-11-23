@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { ConversationStatusBadge } from "@/components/conversation-status";
 import { EmptyState, ErrorState, LoadingState, PageHeader } from "@/components/page";
+import { GlassPanel } from "@/components/ui/glass";
 import { useConversations } from "@/lib/api/queries";
 import { formatDateTime } from "@/lib/utils";
 
@@ -23,10 +24,10 @@ export function ConversationList() {
       ) : data.items.length === 0 ? (
         <EmptyState>No conversations yet. Start one from the chat page.</EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-card">
+        <GlassPanel className="overflow-x-auto">
           <table className="w-full text-sm">
             <caption className="sr-only">Conversations, most recent first</caption>
-            <thead className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
+            <thead className="border-b text-left text-xs text-muted-foreground">
               <tr>
                 <th scope="col" className="px-4 py-2.5 font-medium">Conversation</th>
                 <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
@@ -40,7 +41,7 @@ export function ConversationList() {
             </thead>
             <tbody>
               {data.items.map((c) => (
-                <tr key={c.conversation_id} className="group border-b last:border-0 hover:bg-muted/40">
+                <tr key={c.conversation_id} className="group border-b transition-colors last:border-0 hover:bg-muted">
                   <td className="px-4 py-2.5">
                     <Link
                       href={`/conversations/${c.conversation_id}`}
@@ -53,14 +54,14 @@ export function ConversationList() {
                   <td className="hidden px-4 py-2.5 font-mono text-xs sm:table-cell">{c.customer_id ?? "—"}</td>
                   <td className="hidden px-4 py-2.5 text-xs text-muted-foreground md:table-cell">{formatDateTime(c.last_event_at)}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">{c.message_count}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-emerald-700 dark:text-emerald-400">{c.actions_executed}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-red-700 dark:text-red-400">{c.actions_blocked}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-emerald-700 dark:text-emerald-300">{c.actions_executed}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-rose-700 dark:text-rose-300">{c.actions_blocked}</td>
                   <td className="pr-3 text-muted-foreground"><ChevronRight aria-hidden className="size-4" /></td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </GlassPanel>
       )}
     </>
   );

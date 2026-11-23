@@ -27,7 +27,7 @@ function ArgsList({ args }: { args: Record<string, unknown> }) {
 function StatusLine({ view }: { view: ActionView }) {
   if (view.executed) {
     return (
-      <p className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400">
+      <p className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300">
         <CircleCheckBig aria-hidden className="size-3.5" />
         Executed · <span className="font-mono">{view.executed.payload.idempotency_key}</span>
       </p>
@@ -61,9 +61,9 @@ export function ActionCard({ view, defaultExpanded = false }: { view: ActionView
   return (
     <article
       aria-label={`Proposed action: ${ACTION_LABELS[intent.args.action]}`}
-      className="rounded-xl border bg-card text-card-foreground shadow-xs"
+      className="overflow-hidden rounded-2xl border border-glass-edge bg-glass-inset text-card-foreground shadow-[inset_0_1px_0_0_var(--glass-highlight)]"
     >
-      <header className="flex flex-wrap items-start justify-between gap-2 border-b px-3 py-2.5">
+      <header className="flex flex-wrap items-start justify-between gap-2 border-b px-3.5 py-3">
         <div className="min-w-0">
           <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Proposed action</p>
           <p className="font-medium">
@@ -78,7 +78,7 @@ export function ActionCard({ view, defaultExpanded = false }: { view: ActionView
         )}
       </header>
 
-      <div className="space-y-3 px-3 py-3">
+      <div className="space-y-3 px-3.5 py-3">
         <ArgsList args={intent.args} />
 
         {decision && (
@@ -86,14 +86,14 @@ export function ActionCard({ view, defaultExpanded = false }: { view: ActionView
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <span className="text-muted-foreground">Deciding rules:</span>
               {deciding.map((r) => (
-                <code key={r.rule_id} className="rounded bg-muted px-1.5 py-0.5 font-mono">{r.rule_id}</code>
+                <code key={r.rule_id} className="rounded-md bg-muted px-1.5 py-0.5 font-mono">{r.rule_id}</code>
               ))}
             </div>
             {deciding.some((r) => r.reason_code) && (
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
                 <span className="text-muted-foreground">Reason codes:</span>
                 {deciding.flatMap((r) =>
-                  r.reason_code ? [<code key={r.rule_id} className="rounded border px-1.5 py-0.5 font-mono">{r.reason_code}</code>] : [],
+                  r.reason_code ? [<code key={r.rule_id} className="rounded-md border px-1.5 py-0.5 font-mono">{r.reason_code}</code>] : [],
                 )}
               </div>
             )}
@@ -117,7 +117,7 @@ export function ActionCard({ view, defaultExpanded = false }: { view: ActionView
             type="button"
             aria-expanded={expanded}
             onClick={() => setExpanded((v) => !v)}
-            className="flex w-full items-center justify-between gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring"
+            className="flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
           >
             <span className="flex items-center gap-1.5">
               <ShieldCheck aria-hidden className="size-3.5" />
@@ -129,7 +129,7 @@ export function ActionCard({ view, defaultExpanded = false }: { view: ActionView
             </span>
           </button>
           {expanded && (
-            <div className="space-y-3 px-3 pb-3">
+            <div className="space-y-3 px-3.5 pb-3.5">
               <RuleResultsTable decision={decision} />
               <div>
                 <p className="mb-1 text-xs font-medium">Facts snapshot (system of record)</p>

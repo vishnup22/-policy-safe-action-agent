@@ -15,7 +15,7 @@ function safeNext(raw: string | null): string {
 }
 
 export function LoginForm() {
-  const { client, token, ready, login } = useAuth();
+  const { client, token, ready, sessionExpired, login } = useAuth();
   const router = useRouter();
   const next = safeNext(useSearchParams().get("next"));
   const [passcode, setPasscode] = useState("");
@@ -40,15 +40,20 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm [--card-spacing:--spacing(6)]">
       <CardHeader>
-        <div className="mb-2 flex size-10 items-center justify-center rounded-xl bg-emerald-600/10">
-          <ShieldCheck aria-hidden className="size-5 text-emerald-700 dark:text-emerald-400" />
+        <div className="mb-3 flex size-11 items-center justify-center rounded-2xl border border-glass-edge bg-glass-inset shadow-[inset_0_1px_0_0_var(--glass-highlight)]">
+          <ShieldCheck aria-hidden className="size-5 text-emerald-700 dark:text-emerald-300" />
         </div>
-        <CardTitle className="text-lg">Larkspur Policy Console</CardTitle>
+        <CardTitle className="text-xl font-semibold tracking-tight">Larkspur Policy Console</CardTitle>
         <CardDescription>Enter the demo passcode to continue.</CardDescription>
       </CardHeader>
       <CardContent>
+        {sessionExpired && (
+          <p role="status" className="mb-4 rounded-xl border border-amber-600/30 bg-amber-50/80 px-3 py-2 text-xs text-amber-900 dark:border-amber-300/25 dark:bg-amber-400/10 dark:text-amber-200">
+            Your session expired. Sign in again to continue.
+          </p>
+        )}
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <div className="space-y-1.5">
             <Label htmlFor="passcode">Passcode</Label>
@@ -69,7 +74,7 @@ export function LoginForm() {
               </p>
             )}
           </div>
-          <Button type="submit" className="w-full" disabled={submitting || !passcode}>
+          <Button type="submit" size="lg" className="w-full" disabled={submitting || !passcode}>
             {submitting ? "Signing in…" : "Sign in"}
           </Button>
           {client.mode === "mock" && (

@@ -14,8 +14,10 @@ import type {
   Event,
   ResolveApprovalRequest,
 } from "./types";
+import { DEFAULT_MOCK_PASSCODE } from "./config";
 
-export const DEFAULT_MOCK_PASSCODE = "larkspur-demo";
+export { DEFAULT_MOCK_PASSCODE };
+
 const CHAT_EPOCH = "2026-11-21T12:00:00Z";
 
 export interface MockClientOptions {

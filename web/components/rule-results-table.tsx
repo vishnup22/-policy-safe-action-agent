@@ -4,12 +4,12 @@ import { DecisionBadge } from "./decision-badge";
 
 export function RuleResultsTable({ decision }: { decision: Decision }) {
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto rounded-xl border border-glass-edge">
       <table className="w-full text-left text-xs">
         <caption className="sr-only">
           Rule results for intent {decision.intent_id}; final outcome {decision.outcome}
         </caption>
-        <thead className="bg-muted/60 text-muted-foreground">
+        <thead className="bg-muted text-muted-foreground">
           <tr>
             <th scope="col" className="px-3 py-2 font-medium">Rule</th>
             <th scope="col" className="px-3 py-2 font-medium">Outcome</th>
@@ -24,7 +24,7 @@ export function RuleResultsTable({ decision }: { decision: Decision }) {
               <tr
                 key={r.rule_id}
                 data-deciding={deciding || undefined}
-                className={cn("border-t align-top", deciding && "bg-muted/40")}
+                className={cn("border-t align-top", deciding && "bg-muted")}
               >
                 <td className="px-3 py-2 font-mono font-medium">
                   {r.rule_id}

@@ -44,7 +44,7 @@ describe("RuleResultsTable", () => {
     const deciding = rows.filter((r) => r.hasAttribute("data-deciding"));
     expect(deciding.map((r) => within(r).getAllByRole("cell")[0].textContent)).toEqual([
       "REFUND_WINDOWdeciding",
-      "REFUND_AMOUNTdeciding",
+      "REFUND_AMOUNT_LIMITdeciding",
     ]);
     expect(screen.getByText("AMOUNT_EXCEEDS_REFUNDABLE")).toBeInTheDocument();
   });

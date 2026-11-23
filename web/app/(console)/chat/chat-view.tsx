@@ -9,6 +9,7 @@ import { ActionCard } from "@/components/action-card";
 import { DecisionBadge, OUTCOME_META } from "@/components/decision-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassPanel } from "@/components/ui/glass";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -124,11 +125,11 @@ export function ChatView() {
   }
 
   return (
-    <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <section aria-label="Conversation" className="flex min-h-[70dvh] flex-col rounded-xl border bg-card">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+    <div className="grid flex-1 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <GlassPanel as="section" aria-label="Conversation" className="flex min-h-[70dvh] min-w-0 flex-col">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-4">
           <div className="min-w-0">
-            <h1 className="font-semibold">Customer chat</h1>
+            <h1 className="text-lg font-semibold tracking-tight">Customer chat</h1>
             <p className="truncate text-xs text-muted-foreground">
               {session ? (
                 <>
@@ -155,7 +156,7 @@ export function ChatView() {
           )}
         </header>
 
-        <ol aria-live="polite" className="flex-1 space-y-4 overflow-y-auto px-3 py-4 sm:px-4">
+        <ol aria-live="polite" className="flex-1 space-y-5 overflow-y-auto px-3 py-5 sm:px-5">
           {turns.length === 0 && (
             <li className="mx-auto max-w-md py-10 text-center text-sm text-muted-foreground">
               Pick a demo story or type a message. The agent can only <em>propose</em> actions — the policy
@@ -167,8 +168,8 @@ export function ChatView() {
               <span
                 aria-hidden
                 className={cn(
-                  "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full",
-                  turn.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
+                  "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-glass-edge",
+                  turn.role === "user" ? "bg-primary text-primary-foreground" : "bg-glass-inset",
                 )}
               >
                 {turn.role === "user" ? <User className="size-4" /> : <Bot className="size-4" />}
@@ -176,8 +177,10 @@ export function ChatView() {
               <div className={cn("flex max-w-[min(42rem,100%)] min-w-0 flex-col gap-2", turn.role === "user" && "items-end")}>
                 <div
                   className={cn(
-                    "rounded-2xl px-3.5 py-2 text-sm leading-relaxed",
-                    turn.role === "user" ? "rounded-tr-sm bg-primary text-primary-foreground" : "rounded-tl-sm bg-muted",
+                    "rounded-3xl px-4 py-2.5 text-sm leading-relaxed",
+                    turn.role === "user"
+                      ? "rounded-tr-md bg-primary text-primary-foreground"
+                      : "rounded-tl-md border border-glass-edge bg-glass-inset",
                   )}
                 >
                   <span className="sr-only">{turn.role === "user" ? "Customer: " : "Agent: "}</span>
@@ -202,8 +205,8 @@ export function ChatView() {
           <li aria-hidden ref={bottomRef} />
         </ol>
 
-        <div className="border-t p-3">
-          <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Demo stories">
+        <div className="border-t p-3 sm:p-4">
+          <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Demo stories">
             {DEMO_PROMPTS.map((p) => (
               <Button
                 key={p.story}
@@ -231,12 +234,12 @@ export function ChatView() {
               placeholder="Type a customer message… (Enter to send, Shift+Enter for a new line)"
               className="min-h-11 resize-none"
             />
-            <Button type="submit" size="icon-lg" disabled={busy || !draft.trim()} aria-label="Send message">
+            <Button type="submit" size="icon-lg" className="size-11" disabled={busy || !draft.trim()} aria-label="Send message">
               {busy ? <Loader2 aria-hidden className="animate-spin" /> : <Send aria-hidden />}
             </Button>
           </form>
         </div>
-      </section>
+      </GlassPanel>
 
       <aside className="space-y-4">
         <Card size="sm">

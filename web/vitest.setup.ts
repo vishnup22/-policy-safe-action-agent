@@ -16,6 +16,21 @@ if (!window.matchMedia) {
     }) as MediaQueryList;
 }
 
+if (typeof window.IntersectionObserver === "undefined") {
+  class IntersectionObserverStub {
+    readonly root = null;
+    readonly rootMargin = "0px";
+    readonly thresholds = [0];
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  window.IntersectionObserver = IntersectionObserverStub as unknown as typeof IntersectionObserver;
+}
+
 afterEach(() => {
   cleanup();
   window.sessionStorage.clear();
