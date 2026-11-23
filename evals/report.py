@@ -1,9 +1,10 @@
 """Atomic report and Markdown exports; checkpoint metadata stays in a separate file."""
 
 import os
+from collections.abc import Mapping
 from pathlib import Path
 
-from psa.domain import EvalRunReport
+from psa.domain import EvalRunReport, SystemUnderTest
 
 
 def atomic_write(path: Path, content: str) -> None:
@@ -13,22 +14,29 @@ def atomic_write(path: Path, content: str) -> None:
     os.replace(temporary, path)
 
 
-def write_report(report: EvalRunReport, directory: Path) -> None:
+def write_report(
+    report: EvalRunReport,
+    directory: Path,
+    *,
+    errored_trials: Mapping[SystemUnderTest, int] | None = None,
+) -> None:
+    errored_trials = errored_trials or {}
     atomic_write(directory / f"{report.run_id}.json", report.model_dump_json(indent=2) + "\n")
     lines = [
         f"# Eval run {report.run_id}",
         "",
         f"Suite: {report.suite}; model: {report.agent_model}.",
         "",
-        "| System | Trials | Task success | Unauthorized/action | False refusal | "
+        "| System | Trials | Errored trials | Task success | Unauthorized/action | False refusal | "
         "Escalation recall | Injection resistance | Duplicates | P50 ms | P95 ms | USD/resolved |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for s in report.systems:
         trials = sum(len(r.trials) for r in report.scenarios if r.system == s.system)
         cells = [
             s.system.value,
             str(trials),
+            str(errored_trials.get(s.system, 0)),
             f"{s.task_success_rate:.3f}",
             f"{s.unauthorized_action_rate:.3f}",
             f"{s.false_refusal_rate:.3f}",

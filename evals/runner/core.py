@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import threading
+from collections import Counter
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
@@ -79,14 +80,38 @@ def run_trial(
         policy_version=scenario.policy.version,
         faults=tuple(ToolFault.model_validate(f.model_dump()) for f in scenario.faults),
     )
-    runtime = runtime_factory(config, sessions=sessions, clock=clock)
-    conversation = runtime.start_conversation(SessionStart(**scenario.session.model_dump()))
+    try:
+        runtime = runtime_factory(config, sessions=sessions, clock=clock)
+        conversation = runtime.start_conversation(SessionStart(**scenario.session.model_dump()))
+    except Exception as error:
+        reason = f"runtime startup: {type(error).__name__}"
+        return TrialRecord(
+            scenario_id=scenario.id,
+            category=scenario.category,
+            system=system,
+            result=TrialResult(
+                trial=trial,
+                success=False,
+                turns=0,
+                latency_ms_p50=0,
+                latency_ms_p95=0,
+                cost_usd=0,
+                conversation_id="",
+                failure_reason=reason,
+            ),
+            executed=0,
+            duplicates=0,
+            escalation_expected=False,
+            latencies=[],
+            infrastructure_error=reason,
+        )
     transcript: list[SimulatorTurn] = []
     turn_count = 0
     turn_events: list[Event] = []
     version_at: dict[int, str] = {}
     active_version = scenario.policy.version
     failure: str | None = None
+    infrastructure_error: str | None = None
     budget_interrupted = False
     with ExecutionAudit(
         sessions, world, registry, clock, scenario.policy.set, lambda: active_version
@@ -98,7 +123,11 @@ def run_trial(
             if scenario.policy_change and scenario.policy_change.at_turn == number:
                 registry.get(scenario.policy.set, scenario.policy_change.to_version)
                 active_version = scenario.policy_change.to_version
-                runtime.set_policy_version(active_version)
+                try:
+                    runtime.set_policy_version(active_version)
+                except Exception as error:
+                    infrastructure_error = f"runtime policy change: {type(error).__name__}"
+                    break
             with budget.lock:
                 if budget.spent >= budget.maximum:
                     failure = "budget exhausted"
@@ -119,7 +148,7 @@ def run_trial(
                 try:
                     turn = runtime.handle_user_message(conversation, message)
                 except Exception as error:
-                    failure = f"runtime failure: {type(error).__name__}"
+                    infrastructure_error = f"runtime failure: {type(error).__name__}"
                 with sessions() as db:
                     appended = [e for e in EventLog(db).read(conversation) if e.seq > last_seq]
                 observed = appended or (list(turn.events) if turn else [])
@@ -132,6 +161,9 @@ def run_trial(
                 if turn is None:
                     break
                 turn_count += 1
+                if turn.infrastructure_error is not None:
+                    infrastructure_error = turn.infrastructure_error
+                    break
                 transcript.append(SimulatorTurn(role="agent", text=turn.reply_text))
                 if turn.ended:
                     break
@@ -146,6 +178,8 @@ def run_trial(
         judgment.errors.extend(check_final_state(scenario, world, db))
     if failure:
         judgment.errors.append(failure)
+    if infrastructure_error is not None:
+        judgment.errors.append(f"infrastructure error: {infrastructure_error}")
     return TrialRecord(
         scenario_id=scenario.id,
         category=scenario.category,
@@ -169,6 +203,7 @@ def run_trial(
         latencies=judgment.latencies,
         unattributed_executions=sum("no proposed intent" in e for e in judgment.errors),
         budget_interrupted=budget_interrupted,
+        infrastructure_error=infrastructure_error,
     )
 
 
@@ -223,7 +258,9 @@ def run_suite(
         started, records, spent = checkpoint.started_at, checkpoint.records, checkpoint.budget_spent
     budget = Budget(max_cost_usd, spent)
     completed = {
-        (r.scenario_id, r.system, r.result.trial) for r in records if not r.budget_interrupted
+        (r.scenario_id, r.system, r.result.trial)
+        for r in records
+        if not r.budget_interrupted and r.infrastructure_error is None
     }
 
     def execute(scenario: Scenario, system: SystemUnderTest, index: int) -> TrialRecord | None:
@@ -275,7 +312,11 @@ def run_suite(
     for scenario in scenarios:
         for system in systems:
             results = tuple(
-                r.result for r in records if r.scenario_id == scenario.id and r.system == system
+                r.result
+                for r in records
+                if r.scenario_id == scenario.id
+                and r.system == system
+                and r.infrastructure_error is None
             )
             if results:
                 grouped.append(
@@ -304,5 +345,6 @@ def run_suite(
         systems=tuple(metrics(system, records) for system in systems),
         scenarios=tuple(grouped),
     )
-    write_report(report, reports_dir)
+    errored = Counter(r.system for r in records if r.infrastructure_error is not None)
+    write_report(report, reports_dir, errored_trials=errored)
     return report

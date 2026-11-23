@@ -26,7 +26,7 @@ from psa.domain import (
 )
 from psa.policy import PolicyRegistry
 from psa.runtime.ports import RuntimeConfig, TurnResult
-from psa.store import EventLog
+from psa.store import EventLog, database_url
 from psa.store.models import OrderRow
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -333,6 +333,47 @@ def test_audit_uses_store_facts_not_runtime_claims(sessions: sessionmaker[Sessio
     )
     assert record.result.unauthorized_actions
     assert "independent policy" in (record.result.failure_reason or "")
+
+
+@pytest.mark.db
+def test_infrastructure_errors_are_excluded_and_retried(
+    sessions: sessionmaker[Session], tmp_path: Path
+) -> None:
+    attempts = 0
+
+    class UnreliableRuntime(RefundRuntime):
+        def handle_user_message(self, conversation_id: str, text: str) -> TurnResult:
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                return TurnResult(
+                    conversation_id=conversation_id,
+                    reply_text="Unavailable",
+                    infrastructure_error="model unavailable",
+                )
+            if attempts == 2:
+                raise TimeoutError("runtime unavailable")
+            return super().handle_user_message(conversation_id, text)
+
+    kwargs: dict[str, Any] = dict(
+        systems=[SystemUnderTest.GUARDED],
+        trials=3,
+        runtime_factory=UnreliableRuntime,
+        simulator_factory=lambda: ScriptedSimulator([]),
+        url=database_url(),
+        policies_dir=ROOT / "policies",
+        reports_dir=tmp_path,
+        suite="test",
+        run_id="outage",
+    )
+    partial = run_suite([scenario()], **kwargs)
+    assert partial.systems[0].task_success_rate == 1
+    assert partial.systems[0].pass_hat_k == {1: 1}
+    assert len(partial.scenarios[0].trials) == 1
+    assert "| guarded | 1 | 2 |" in (tmp_path / "outage.md").read_text(encoding="utf-8")
+    resumed = run_suite([scenario()], resume=True, **kwargs)
+    assert attempts == 5
+    assert resumed.systems[0].pass_hat_k == {1: 1, 2: 1, 3: 1}
 
 
 @pytest.mark.db

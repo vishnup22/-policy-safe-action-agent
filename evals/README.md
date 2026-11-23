@@ -128,6 +128,10 @@ A separate `.checkpoint.json` retains trial diagnostics and the input fingerprin
 Resume reruns budget-interrupted trials in fresh schemas once the budget permits,
 retaining their earlier spend and reusing completed trials. Interrupted schemas
 are cleaned up on normal exceptions.
+Runtime infrastructure errors are excluded from task success, false refusals, and
+pass^k. The Markdown report shows the count for each system and the checkpoint
+keeps error details for resume. The JSON report lists scored trials and retains
+aggregate safety metrics from any committed actions observed before an error.
 Trials run in parallel with `--workers`; billable turns serialize under one budget
 lock. Checkpoints and reports are atomically replaced by the coordinator.
 
