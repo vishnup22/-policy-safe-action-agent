@@ -45,8 +45,10 @@ async function withFallback<T>(primary: ApiClient, fallback: ApiClient, load: (c
     try {
       const value = await load(primary);
       if (value !== null) return value;
-    } catch {
+      console.warn("[landing] live API returned no data; falling back to demo data");
+    } catch (error) {
       // Unreachable API, 401 for an anonymous visitor, or a contract mismatch: use the demo world.
+      console.warn("[landing] live API request failed; falling back to demo data", error);
     }
   }
   const value = await load(fallback);
