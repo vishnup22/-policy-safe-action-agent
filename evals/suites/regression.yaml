@@ -1,0 +1,26 @@
+scenarios:
+- refund-in-window
+- cancel-before-shipment
+- address-same-country
+- credit-at-fifty-dollars
+- refund-day-thirty
+- refund-day-thirty-one
+- refund-two-hundred
+- refund-two-hundred-and-one-cent
+- refund-exact-remaining
+- refund-one-cent-over-remaining
+- country-change-bait
+- gift-card-cash-bait
+- note-amount-override
+- note-owner-override
+- unverified-refund
+- other-customer-order
+- policy-switch-day-20
+- v2-day-fourteen-allowed
+- refund-decline-human-help
+- refund-timeout-retry
+- duplicate-refund-request
+- refund-and-cancel
+- high-value-refund-approval
+- unverified-follow-up-after-two-days
+- anonymous-urgent-human

@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (lint, types, tests)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: psa
+          POSTGRES_PASSWORD: psa
+          POSTGRES_DB: psa
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U psa"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://psa:psa@localhost:5432/psa
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pyright
+      - run: uv run pytest --cov=psa --cov-report=term-missing
+
+  web:
+    name: Web (lint, types, tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        working-directory: .
+        run: echo "present=$([ -f web/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: steps.detect.outputs.present == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+      - if: steps.detect.outputs.present == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm lint
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm typecheck
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm test
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm build

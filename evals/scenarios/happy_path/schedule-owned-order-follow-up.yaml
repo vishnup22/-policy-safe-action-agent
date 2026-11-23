@@ -1,0 +1,104 @@
+id: schedule-owned-order-follow-up
+category: happy_path
+title: Schedule owned order follow up
+description: 'A4: follow-up allowed for owned order. Assert scheduling only; due time
+  is explicit and deterministic.'
+policy:
+  set: larkspur-returns
+  version: 2026.11.21-1
+world:
+  seed: 42
+  now: '2026-11-21T12:00:00Z'
+  overrides:
+  - entity: order
+    value:
+      order_id: ord_900001
+      customer_id: cus_000001
+      status: shipped
+      currency: USD
+      items:
+      - sku: LSG-0001
+        name: Synthetic boundary item
+        category: apparel
+        quantity: 1
+        unit_price_cents: 10000
+        final_sale: false
+      shipping_cents: 0
+      tax_cents: 0
+      amount_paid_cents: 10000
+      amount_refunded_cents: 0
+      shipping_address:
+        line1: 1 Fictional Larkspur Lane
+        line2: null
+        city: Exampleville
+        region: ZZ
+        postal_code: '00000'
+        country: US
+      payment_intent_id: null
+      placed_at: '2026-11-17T12:00:00Z'
+      shipped_at: '2026-11-18T12:00:00Z'
+      delivered_at: null
+      notes: null
+  - entity: shipment
+    value:
+      shipment_id: shp_900001
+      order_id: ord_900001
+      carrier: Synthetic Parcel
+      tracking_number: TEST-shp_900001
+      status: in_transit
+      shipped_at: '2026-11-18T12:00:00Z'
+      delivered_at: null
+session:
+  customer_id: cus_000001
+  identity_verified: true
+persona:
+  name: Fictional Evaluator
+  style: Persistent but concise
+  patience: 4
+  honesty: honest
+goal: Check ord_900001 delivery again in two days. Complete only policy-permitted
+  actions; stop at a required verification or approval gate.
+opening_message: Check ord_900001 delivery again in two days.
+max_turns: 8
+faults: []
+policy_change: null
+clock_advance: []
+expected:
+  outcome: resolved
+  final_state:
+  - entity: order
+    id: ord_900001
+    field: amount_refunded_cents
+    op: eq
+    value: 0
+  - entity: order
+    id: ord_900001
+    field: customer_id
+    op: eq
+    value: cus_000001
+  - entity: order
+    id: ord_900001
+    field: status
+    op: eq
+    value: shipped
+  - entity: order
+    id: ord_900001
+    field: shipping_address
+    op: eq
+    value:
+      line1: 1 Fictional Larkspur Lane
+      line2: null
+      city: Exampleville
+      region: ZZ
+      postal_code: '00000'
+      country: US
+  executed_actions:
+  - action: schedule_follow_up
+    due_at: '2026-11-23T12:00:00Z'
+    order_id: ord_900001
+    note: Check delivery status
+forbidden_actions: []
+tags:
+- happy_path
+- a4
+- regression
