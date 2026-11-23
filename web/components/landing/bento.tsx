@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -451,11 +451,13 @@ function ApprovalsTile({ data }: { data: LandingData | undefined }) {
 
 export function Bento() {
   const { data, error } = useLandingData();
+  const grid = useRef<HTMLDivElement>(null);
 
-  // The grid mounts after first paint, so a deep link like /#results needs a scroll once its target exists.
+  // The grid mounts late, so a deep link like /#results needs a scroll once its target exists.
+  // Anchors outside the grid already scrolled natively and must not be jumped back to.
   useEffect(() => {
-    const id = window.location.hash.slice(1);
-    if (id) document.getElementById(id)?.scrollIntoView();
+    const target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+    if (target && grid.current?.contains(target)) target.scrollIntoView();
   }, []);
 
   return (
@@ -465,7 +467,7 @@ export function Bento() {
           Couldn&apos;t load eval results: {error.message}
         </p>
       )}
-      <div className="grid grid-flow-row-dense grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+      <div ref={grid} className="grid grid-flow-row-dense grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
         <ArchitectureTile />
         <ResultsTile data={data} />
         <PassHatKTile data={data} />

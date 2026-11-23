@@ -42,7 +42,7 @@ test.describe("landing page", () => {
     await expect(page.getByRole("link", { name: /View on GitHub/ })).toBeVisible();
 
     const results = page.getByRole("article", { name: "Baseline vs guarded" });
-    await results.scrollIntoViewIfNeeded();
+    await page.locator("#results").scrollIntoViewIfNeeded();
     await expect(results.getByText("Demo data")).toBeVisible();
     await expect(results.getByText(/^\d+(\.\d)?%$/).first()).toBeVisible();
     for (const name of ["Propose → decide → execute", "pass^k — reliability", "Replay a decision", "Policy as code", "Human in the loop"]) {
@@ -56,13 +56,31 @@ test.describe("landing page", () => {
     expect(errors).toEqual([]);
   });
 
+  test("bento code and data wait until the visitor heads towards the grid", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("load");
+    const placeholder = page.locator("#results");
+    const belowFold = await placeholder.evaluate((el) => el.getBoundingClientRect().top >= window.innerHeight);
+    test.skip(!belowFold, "the grid is on the first screen at this viewport, so it loads straight away");
+
+    await page.waitForTimeout(2000);
+    await expect(placeholder).toHaveAttribute("aria-busy", "true");
+    await page.mouse.wheel(0, 400);
+    await expect(page.getByRole("article", { name: "Baseline vs guarded" })).toBeAttached();
+  });
+
+  test("a deep link to #results scrolls to the loaded tile", async ({ page }) => {
+    await page.goto("/#results");
+    await expect(page.getByRole("article", { name: "Baseline vs guarded" })).toBeInViewport();
+  });
+
   test("section nav is a floating pill on desktop and collapses on mobile", async ({ page }) => {
     await page.goto("/");
     const sections = page.getByRole("navigation", { name: "Sections" });
     if ((page.viewportSize()?.width ?? 0) >= 768) {
       await expect(sections).toBeVisible();
-      await expect(page.getByRole("article", { name: "Baseline vs guarded" })).toBeAttached();
       await sections.getByRole("link", { name: "Results" }).click();
+      await expect(page.getByRole("article", { name: "Baseline vs guarded" })).toBeInViewport();
       await expect(sections.getByRole("link", { name: "Results" })).toHaveAttribute("aria-current", "location");
     } else {
       await expect(sections).toBeHidden();

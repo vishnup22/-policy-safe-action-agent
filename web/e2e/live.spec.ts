@@ -52,6 +52,7 @@ test("console pages load real data from the API", async ({ page }) => {
 test("landing shows live numbers to a signed-in operator", async ({ page }) => {
   await signIn(page, "/conversations");
   await page.goto("/");
+  await page.locator("#results").scrollIntoViewIfNeeded();
   await expect(page.getByText("Live API").first()).toBeVisible();
 });
 
