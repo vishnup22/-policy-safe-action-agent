@@ -26,7 +26,8 @@ import type { Approval, DecisionOutcome, Event, SystemMetrics } from "@/lib/api/
 import { useAuth } from "@/lib/auth";
 import { decidingRules } from "@/lib/decisions";
 import { ACTION_LABELS, EVENT_LABELS, describeArgs, summarizeEvent } from "@/lib/events";
-import { loadLandingData, PREVIEW_CONVERSATION_ID, type DataSource, type LandingData } from "@/lib/landing";import { cn, formatPercent } from "@/lib/utils";
+import { loadLandingData, PREVIEW_CONVERSATION_ID, type DataSource, type LandingData } from "@/lib/landing";
+import { cn, formatPercent } from "@/lib/utils";
 import { MiniPassHatK } from "./mini-pass-hat-k";
 
 function useLandingData() {
