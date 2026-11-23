@@ -255,21 +255,21 @@ Absorbs former T2.2, T3.4, T4.2–T4.4. Goal: the API the console talks to and t
   - Bento grid: propose → decide → execute architecture diagram; **baseline vs guarded results** (unauthorized-action rate, task success, false refusals) from the latest eval run; pass^k chart; replay timeline preview; policy-as-code YAML snippet; approvals queue preview.
   - Minimal glass dock-style footer. Numbers come from the API (`/api/evals/runs`) with mock fallback — never hardcoded.
 - [x] **F3 Console restyle** — every Lane C page (chat, conversations/replay, approvals, evals, login) moved onto the glass system with spring page/tab transitions. Decision badges keep distinct semantic colors + icons (no harsh neon; never color-only).
-- [ ] **F4 Live mode** — `LiveClient` against Lane E's API once merged (`NEXT_PUBLIC_API_MODE=live`); loading / empty / error states everywhere; handle 401 → login. Add the new reason codes `ITEM_NOT_IN_ORDER`, `FOLLOW_UP_OUT_OF_RANGE` to the Zod schemas.
-  - *Status:* reason codes, 401 → login, loading / empty / error states and landing live-with-mock-fallback are done; verification against Lane E's API is pending its merge.
-- [ ] **F5 Quality**
+- [x] **F4 Live mode** — `LiveClient` against Lane E's API once merged (`NEXT_PUBLIC_API_MODE=live`); loading / empty / error states everywhere; handle 401 → login. Add the new reason codes `ITEM_NOT_IN_ORDER`, `FOLLOW_UP_OUT_OF_RANGE` to the Zod schemas.
+  - *Status:* done. Verified 2026-11-22 against `uv run uvicorn psa.api.main:app` (seeded world, fake-runtime report): `web/e2e/live.spec.ts` passes at 375 px and 1440 px — console pages load API data, landing shows "Live API" for a signed-in operator, a forged token is dropped → `/login`.
+- [~] **F5 Quality**
   - Vitest for glass primitives and reduced-motion behavior; Playwright smoke (landing + every console page in mock mode, 375 px and 1440 px).
   - Lighthouse on `/`: Performance ≥ 90, Accessibility ≥ 95.
-  - *Status:* Vitest and Playwright smoke done. Lighthouse on `/`: desktop Performance 100 / Accessibility 100; mobile (simulated slow 4G, 4× CPU) Performance 86–89 / Accessibility 100.
+  - *Status:* Vitest and Playwright smoke done. Lighthouse on `/`: desktop Performance 100 / Accessibility 100; mobile (simulated slow 4G, 4× CPU) Performance 86–89 / Accessibility 100. Remaining gap is the ~170 KB Next.js/React runtime; open until mobile ≥ 90 or the target is relaxed.
 - **Acceptance:** web gate green; landing + console fully usable in mock mode; live mode works against the local API after Lane E merges; zero changes outside `web/`.
 
 ---
 
 ### T4.5 Integration + first real results — Claude Code · after D and E merge
-- [ ] Wire `psa.runtime.factory.build_runtime` into the API entrypoint (`uv run uvicorn psa.api.main:app`) and the eval runner default.
+- [x] Wire `psa.runtime.factory.build_runtime` into the API entrypoint (`uv run uvicorn psa.api.main:app`) and the eval runner default (`--runtime real`; `--runtime fake` for offline harness checks).
 - [ ] Run the regression suite with a real LLM for baseline and guarded → **first `EvalRunReport`**, visible in the console and landing page.
 - [ ] Release `dev` → `main`, tag `v0.4.0`.
-- **Owner prerequisites:** an LLM API key in `.env` (`LLM_*`, `SIM_LLM_*`), optional Stripe test key (otherwise `stripe-sim`), and an eval budget cap (`--max-cost-usd`).
+- **Owner prerequisites:** owner OK to run models again; local Ollama `qwen2.5:14b` in `.env` (`LLM_*`, `SIM_LLM_*`, free); optional Stripe test key (otherwise `stripe-sim`); `--max-cost-usd` only matters for hosted providers.
 
 
 ## Day 5 — Faults & regression gate
