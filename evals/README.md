@@ -75,7 +75,7 @@ probe an explicit action turn; it defaults to 1. Clock and policy changes throug
 that turn are applied before the probe. A mixed permitted/denied
 request is marked denied while still asserting the permitted action completes.
 
-The 100-scenario validation result measures dataset validity only. The runner below
+Scenario validation measures dataset validity. The runner below
 produces reports; fake-runtime results do not measure agent quality.
 Never change a scenario's outcome or forbidden actions to make an eval pass.
 
@@ -92,9 +92,8 @@ uv run python -m evals.runner --suite full --runtime fake --systems baseline gua
 uv run python -m evals.runner --suite regression --runtime fake --run-id <previous-id> --resume
 ```
 
-The regression suite has 25 IDs spanning all 11 categories. The full dataset has
-100 scenarios: 19/13/13/10/10/6/10/6/6/3/4 in the category order in TASKS.md,
-apportioning project_description.md's target distribution to 100.
+The regression suite has 25 IDs spanning all 11 categories. The full dataset
+includes 15 tool-failure scenarios across the seven write tools.
 `tests/evals/test_policy_consistency.py` uses the real policy engine. Concrete
 forbidden probes fill omitted arguments from the fixture; the four review fixes
 narrow their amount/country matches without changing expected outcomes. Successful
@@ -107,6 +106,9 @@ world, then drops only that schema. The runner injects RuntimeConfig faults, app
 clock/policy changes before the indicated turn, sends the opening message, and
 calls UserSimulator for subsequent messages. The fake runtime only echoes and
 persists messages; zero successful refund scenarios is the expected smoke result.
+Fault schedules target one-based call numbers. Tool faults use the action name.
+The `payments.refund` target is available to runtimes that wrap their payment
+gateway with `FaultInjectingPayments` and share the trial's `FaultInjector`.
 Real integration uses `run_suite(..., runtime_factory=..., simulator_factory=...)`
 through `psa.runtime.ports`; production runtime and simulator wiring remains T4.5.
 

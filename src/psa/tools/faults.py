@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 from psa.runtime.ports import ToolFault
 from psa.tools.errors import ToolFailure
+from psa.tools.payments import PaymentsGateway, RefundReceipt
+
+PAYMENTS_REFUND = "payments.refund"
 
 
 class FaultInjector:
@@ -24,3 +28,25 @@ class FaultInjector:
 
     def calls(self, tool: str) -> int:
         return self._calls[tool]
+
+
+@dataclass(frozen=True)
+class FaultInjectingPayments:
+    """Inject refund faults at the gateway boundary before forwarding the payment call."""
+
+    gateway: PaymentsGateway
+    faults: FaultInjector
+
+    @property
+    def name(self) -> str:
+        return self.gateway.name
+
+    def refund(
+        self, *, payment_intent_id: str | None, amount_cents: int, idempotency_key: str
+    ) -> RefundReceipt:
+        self.faults.before_call(PAYMENTS_REFUND)
+        return self.gateway.refund(
+            payment_intent_id=payment_intent_id,
+            amount_cents=amount_cents,
+            idempotency_key=idempotency_key,
+        )
