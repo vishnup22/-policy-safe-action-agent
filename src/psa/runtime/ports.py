@@ -66,6 +66,12 @@ class TurnResult(_Frozen):
     )
     pending_approval_id: str | None = None
     ended: bool = False
+    infrastructure_error: str | None = Field(
+        default=None,
+        description="Set when the turn failed for an infrastructure reason (e.g. the model "
+        "server was unreachable) and the reply is a canned fallback. Eval runners must not "
+        "score such a turn as agent behavior.",
+    )
 
 
 class ApprovalResolution(StrEnum):

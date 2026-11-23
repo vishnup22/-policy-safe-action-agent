@@ -347,6 +347,12 @@ def test_llm_outage_returns_apology_and_keeps_the_log(shop: Shop) -> None:
     turn = h.runtime.handle_user_message(h.conversation_id, "hello?")
     assert "trouble" in turn.reply_text
     assert [e.type for e in turn.events] == [EventType.USER_MESSAGE, EventType.AGENT_MESSAGE]
+    assert turn.infrastructure_error == "llm: down"
+
+
+def test_normal_turn_has_no_infrastructure_error(shop: Shop) -> None:
+    h = harness(shop, G, [REPLY])
+    assert h.runtime.handle_user_message(h.conversation_id, "hi").infrastructure_error is None
 
 
 def test_policy_version_switch_applies_immediately(shop: Shop) -> None:
